@@ -1,0 +1,174 @@
+import {unwrapPath, clonePath} from './path-helper'
+import {reservedTypes} from './util'
+
+const NOT_MODIFIED = 0
+const DELETED = 1
+const REPLACED = 2
+const REPLACED_MULTIPLE = 3
+
+function applyHandler (path, handler) {
+  const result = handler(path)
+
+  if (result === void 0) {
+    return {
+      flag: NOT_MODIFIED,
+      path
+    }
+  }
+  if (result === null) {
+    return {
+      flag: DELETED,
+      path: clonePath(path, null)
+    }
+  }
+
+  const resultNode = unwrapPath(result)
+
+  if (Array.isArray(resultNode)) {
+    return {
+      flag: REPLACED_MULTIPLE,
+      path: resultNode.map(elem => clonePath(path, elem))
+    }
+  }
+  return {
+    flag: REPLACED,
+    path: clonePath(path, resultNode)
+  }
+}
+
+function applyHandlerList (path, listHandler) {
+  for (let handler of listHandler) {
+    const result = applyHandler(path, handler)
+    const {flag} = result
+
+    if (flag !== NOT_MODIFIED) {
+      return result
+    }
+  }
+  return {
+    flag: NOT_MODIFIED,
+    path
+  }
+}
+
+function transformPathList (listPath, callback, allowMultiple) {
+  let curIndex = 0
+  let modified = false
+
+  while (curIndex < listPath.length) {
+    const {flag, path} = callback(listPath[curIndex])
+
+    if (flag === NOT_MODIFIED) {
+      curIndex += 1
+
+    } else if (flag === DELETED) {
+      listPath.splice(curIndex, 1)
+      if (!modified) {
+        modified = true
+      }
+    } else if (flag === REPLACED_MULTIPLE) {
+      if (!allowMultiple) {
+        throw new Error('Multiple replacement is not allowed here')
+      }
+      listPath.splice(curIndex, 1, ...path)
+      if (!modified) {
+        modified = true
+      }
+    } else if (flag === REPLACED) {
+      listPath.splice(curIndex, 1, path)
+      if (!modified) {
+        modified = true
+      }
+    }
+  }
+
+  if (modified) {
+    return {flag: REPLACED_MULTIPLE, path: listPath}
+  }
+  return {flag: NOT_MODIFIED, path: listPath}
+}
+
+function applyPhase (path, visitor, phase) {
+  const handlerMap = visitor[phase]
+  const {flag, path: [result]} = transformPathList([path],
+    eachPath => applyHandlerList(eachPath, handlerMap.get(eachPath.type))
+  )
+
+  if (flag === NOT_MODIFIED) {
+    return {flag, path: result}
+  }
+  if (result == null) {
+    return {flag: DELETED, path: clonePath(path, null)}
+  }
+
+  return {flag: REPLACED, path: result}
+}
+
+function transformPath (path, visitor) {
+  // enter phase
+  const result = applyPhase(path, visitor, 'enter')
+  const {flag: enterFlag, path: newPath} = result
+
+  if (enterFlag === DELETED) {
+    return result
+  }
+  if (enterFlag === REPLACED) {
+    const recurResult = transformPath(newPath, visitor)
+    const {flag: newFlag, path: newRecurPath} = recurResult
+
+    if (newFlag === DELETED) {
+      return recurResult
+    }
+    return {flag: REPLACED, path: newRecurPath}
+  }
+
+  // children phase
+  const {type, children, _structMap} = path
+  let modified = false
+
+  // primitive types doesn't have children
+  if (!reservedTypes.has(type)) {
+    for (let {name, isArray} of _structMap.get(type).children) {
+      const child = children.get(name)
+
+      if (isArray) {
+        const {flag, path: newChildArray} = transformPathList(
+          child,
+          childPath => transformPath(childPath, visitor),
+          true
+        )
+
+        if (flag !== NOT_MODIFIED) {
+          children.set(name, newChildArray)
+          path.node[name] = newChildArray.map(_path => _path.node)
+          if (!modified) {
+            modified = true
+          }
+        }
+      } else {
+        const {flag, path: newPath} = transformPath(child, visitor)
+
+        if (flag !== NOT_MODIFIED) {
+          children.set(name, newPath)
+          path.node[name] = newPath.node
+          if (!modified) {
+            modified = true
+          }
+        }
+      }
+    }
+  }
+
+  // exit phase
+  const exitResult = applyPhase(path, visitor, 'exit')
+  const {flag: exitFlag, path: exitPath} = exitResult
+
+  if (exitFlag === DELETED || (!modified && exitFlag === NOT_MODIFIED)) {
+    return exitResult
+  }
+  return {flag: REPLACED, path: exitPath}
+}
+
+export function Transform (path, visitor) {
+  return transformPath(path, visitor).path
+}
