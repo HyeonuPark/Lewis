@@ -82,14 +82,12 @@ function _validatePath (path, queue) {
     path._scopeContainer = ScopeContainer()
   }
 
-  if (validateFunc) {
-    const result = validateFunc(path)
+  if (_validateFunc) {
+    const result = _validateFunc(path)
     if (typeof result === 'string') {
       throw new Error(`ValidateError - ${result}`)
     }
   }
-
-  path._isValid = true
 }
 
 export function validatePath (path) {

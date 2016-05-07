@@ -4,10 +4,12 @@
   "description": "Syntax agnostic compiler framework",
   "main": "bin/index.js",
   "scripts": {
-    "build": "babel --out-dir bin -- src",
+    "build": "babel src --out-dir bin",
     "unit": "mocha test --require babel-polyfill --require babel-register",
     "fixture": "mocha test/fixture --require babel-polyfill --require babel-register",
-    "test": "npm run unit && npm run fixture"
+    "test": "npm run unit && npm run fixture",
+    "preversion": "npm test",
+    "postversion": "npm run build && npm publish && git push origin master --tags"
   },
   "repository": {
     "type": "git",
