@@ -15,21 +15,21 @@ function checkNull (node) {
   return node
 }
 
-const makeFactoryFunc = (type, children) => (...args) => {
-  const node = {type}
+const makeFactoryFunc = (nodeType, children) => (...args) => {
+  const node = {type: nodeType}
 
   for (let {index, value: {name, type, isArray}} of indexed(children)) {
     const given = unwrapPath(args[index])
 
     if (isArray) {
-      assertType(given, 'array', `Factory argument ${name}`)
+      assertType(given, 'array', `${nodeType} -> ${name}`)
 
       node[name] = given.map(givenElem => {
-        assertNodeType(givenElem, type, `Each factory argument's ${name}`)
+        assertNodeType(givenElem, type, `${nodeType} -> each ${name}`)
         return checkNull(givenElem)
       })
     } else {
-      assertNodeType(given, type, `Factory argument ${name}`)
+      assertNodeType(given, type, `${nodeType} -> ${name}`)
 
       node[name] = checkNull(given)
     }

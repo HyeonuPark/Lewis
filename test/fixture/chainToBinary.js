@@ -1,7 +1,7 @@
 import {expect} from 'chai'
 import lewis from '../../src/index'
 
-describe('#fixture# Chain to binary expression', () => {
+describe('Chain to binary expression fixture', () => {
   const {define, buildSpec} = lewis()
 
   define('Node')

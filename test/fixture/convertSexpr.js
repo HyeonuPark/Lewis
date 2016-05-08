@@ -2,7 +2,7 @@ import {expect} from 'chai'
 import {Map as IMap} from 'immutable'
 import lewis from '../../src/index'
 
-describe('#fixture# Convert to sexpr', () => {
+describe('Convert to sexpr fixture', () => {
   const {define, buildSpec} = lewis()
 
   define('Sexpr', [

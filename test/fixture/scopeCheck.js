@@ -1,7 +1,7 @@
 import {expect} from 'chai'
 import lewis from '../../src/index'
 
-describe('#fixture# Check scope to validate namespace', () => {
+describe('Check scope to validate namespace fixture', () => {
   const {define, buildSpec} = lewis()
 
   define('Node')
@@ -50,7 +50,7 @@ describe('#fixture# Check scope to validate namespace', () => {
 
   const {types: t, loadAst} = buildSpec()
 
-  it('should success to build when scope is valid', () => {
+  it('should success when scope is valid', () => {
     const ast = t.Block([
       t.Identifier('a', true),
       t.Identifier('a', false),
@@ -61,23 +61,40 @@ describe('#fixture# Check scope to validate namespace', () => {
       t.Identifier('b', true)
     ])
 
-    expect(loadAst(ast)).to.has.property('_validateFunc').with.a('function')
     expect(loadAst(ast)).to.be.an('object')
   })
 
-  it('should fail to build when scope is invalid', () => {
+  it('should fail when use identifier before declaration', () => {
     const ast1 = t.Block([
       t.Identifier('a', false)
     ])
     const ast2 = t.Block([
-      t.Identifier('a', true),
-      t.Identifier('b', true),
+      t.Identifier('a', false),
       t.Identifier('a', true)
     ])
 
     expect(() => loadAst(ast1))
       .to.throw('identifier not declared: a')
     expect(() => loadAst(ast2))
+      .to.throw('identifier not declared: a')
+  })
+
+  it('should fail when use duplicated declaration', () => {
+    const ast = t.Block([
+      t.Identifier('a', true),
+      t.Identifier('a', true)
+    ])
+
+    expect(() => loadAst(ast))
       .to.throw('duplicated declaration within same scope: a')
+  })
+
+  it('should fail when reference child scope', () => {
+    const ast = t.Block([
+      t.Block([
+        t.Identifier('a', true)
+      ]),
+      t.Identifier('a', false)
+    ])
   })
 })

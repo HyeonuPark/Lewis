@@ -13,8 +13,19 @@ export const reservedTypes = new Set([
 
 export function isValidType (value, type) {
   const detectedRaw = detectType(value)
-  const detected = detectedRaw === 'undefined' ? 'null' : detectedRaw
-  return detected === type || (value != null && typeof value !== type)
+  const detected = detectedRaw === 'undefined'
+    ? 'null'
+    : detectedRaw
+
+  if (type === detected) {
+    return true
+  }
+
+  if (detectedRaw === 'null') {
+    return false
+  }
+
+  return typeof value === type
 }
 
 export function assertType (value, type, typeName = 'Type', msg) {
