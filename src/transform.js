@@ -1,4 +1,4 @@
-import {unwrapPath, clonePath} from './path-helper'
+import {unwrapPath, clonePath, deletePath} from './path-helper'
 import {reservedTypes} from './util'
 import {MapX} from './mapx'
 
@@ -16,24 +16,35 @@ function applyHandler (path, {handler, key}, stateMap) {
       path
     }
   }
+
   if (result === null) {
+    const newPath = clonePath(path, null)
+    deletePath(path)
+
     return {
       flag: DELETED,
-      path: clonePath(path, null)
+      path: newPath
     }
   }
 
   const resultNode = unwrapPath(result)
 
   if (Array.isArray(resultNode)) {
+    const newPath = resultNode.map(elem => clonePath(path, elem))
+    deletePath(path)
+
     return {
       flag: REPLACED_MULTIPLE,
-      path: resultNode.map(elem => clonePath(path, elem))
+      path: newPath
     }
   }
+
+  const newPath = clonePath(path, resultNode)
+  deletePath(path)
+
   return {
     flag: REPLACED,
-    path: clonePath(path, resultNode)
+    path: newPath
   }
 }
 

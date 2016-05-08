@@ -3,48 +3,6 @@ import {Queue} from 'iterable-queue'
 import {Path} from './path'
 import {ScopeContainer} from './scope'
 
-export function* iterateChildren (path) {
-  const {children, _structMap} = path
-
-  for (let {name, isArray} of _structMap.get(type).children) {
-    const child = children.get(name)
-
-    if (isArray) {
-      for (let elem of child) {
-        yield {
-          name,
-          path: elem,
-          isArray: true
-        }
-      }
-    } else {
-      yield {
-        name,
-        path: child,
-        isArray: false
-      }
-    }
-  }
-}
-
-export function* iterateDeep (path) {
-  yield path
-
-  const {children, _structMap} = path
-
-  for (let {name, isArray} of _structMap.get(type).children) {
-    const child = children.get(name)
-
-    if (isArray) {
-      for (let elem of child) {
-        yield* elem.iterateDeep()
-      }
-    } else {
-      yield* child.iterateDeep()
-    }
-  }
-}
-
 export function isPath (maybePath) {
   return maybePath instanceof Path
 }
@@ -79,7 +37,7 @@ function _validatePath (path, queue) {
   if (parent && parent._scopeContainer) {
     path._scopeContainer = parent._scopeContainer
   } else {
-    path._scopeContainer = ScopeContainer()
+    path._scopeContainer = new ScopeContainer()
   }
 
   if (_validateFunc) {
@@ -95,20 +53,29 @@ export function validatePath (path) {
   for (let descendant of queue) {
     _validatePath(descendant, queue)
   }
+  return path
 }
 
 export function childPath (parentPath, childNode) {
   const {_structMap, _subtypeMap} = parentPath
-  return new Path(_structMap, _subtypeMap, childNode, parentPath)
+  const newPath = new Path(_structMap, _subtypeMap, childNode, parentPath)
+  validatePath(newPath)
+  return newPath
 }
 
 export function clonePath (originPath, newNode) {
   const {_structMap, _subtypeMap, parent} = originPath
-  return new Path(_structMap, _subtypeMap, newNode, parent)
+  const newPath = new Path(_structMap, _subtypeMap, newNode, parent)
+  validatePath(newPath)
+  return newPath
 }
 
 export function createPath (structMap, subtypeMap, node, parent) {
   const path = new Path(structMap, subtypeMap, node, parent)
   validatePath(path)
   return path
+}
+
+export function deletePath (path) {
+  path._scopeContainer.delete()
 }

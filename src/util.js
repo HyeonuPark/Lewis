@@ -30,7 +30,7 @@ export function isValidType (value, type) {
 
 export function assertType (value, type, typeName = 'Type', msg) {
   if (!isValidType(value, type)) {
-    let errMsg = `${typeName} should be ${type} but got ${detected}`
+    let errMsg = `${typeName} should be ${type} but got ${detectType(value)}`
     if (msg) {
       errMsg += ` - ${msg}`
     }

@@ -37,10 +37,10 @@ describe('Advanced scope check for validate namespace fixture', () => {
 
       path.anchorScope()
 
-      if (scope.has(name)) {
+      if (scope.get(name)) {
         return `duplicated declaration within same scope: ${name}`
       }
-      scope.add(name, initType)
+      scope.set(name, initType)
     }
   })
 
@@ -92,7 +92,7 @@ describe('Advanced scope check for validate namespace fixture', () => {
       const scope = path.scope('id')
 
       for ({node: arg} of path.get('arguments')) {
-        scope.add(arg)
+        scope.set(arg, null)
       }
     }
   })
