@@ -18,8 +18,7 @@ describe('README.md example fixture', () => {
     define('StringLiteral', [
       {
         name: 'content',
-        type: 'string',
-        visitable: false
+        type: 'string'
       }
     ], {
       alias: 'Expression'
@@ -28,8 +27,7 @@ describe('README.md example fixture', () => {
     define('Identifier', [
       {
         name: 'name',
-        type: 'string',
-        visitable: false
+        type: 'string'
       }
     ], {
       alias: 'Expression'

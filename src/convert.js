@@ -14,7 +14,7 @@ export function Convert (path, visitor) {
     const msg = `Visitor have ${handlersLength} handlers for ${type}, expect 1`
     throw new Error(msg)
   }
-  const handler = handlerList[0]
+  const {handler} = handlerList[0]
 
   const tmpChildren = new Map()
 

@@ -1,13 +1,14 @@
 import {unwrapPath, clonePath} from './path-helper'
 import {reservedTypes} from './util'
+import {MapX} from './mapx'
 
 const NOT_MODIFIED = 0
 const DELETED = 1
 const REPLACED = 2
 const REPLACED_MULTIPLE = 3
 
-function applyHandler (path, handler) {
-  const result = handler(path)
+function applyHandler (path, {handler, key}, stateMap) {
+  const result = handler(path, stateMap.get(key))
 
   if (result === void 0) {
     return {
@@ -36,9 +37,17 @@ function applyHandler (path, handler) {
   }
 }
 
-function applyHandlerList (path, listHandler) {
+function applyHandlerList (path, listHandler, stateMap) {
+  // primitive values not changed
+  if (reservedTypes.has(path.type)) {
+    return {
+      flag: NOT_MODIFIED,
+      path
+    }
+  }
+
   for (let handler of listHandler) {
-    const result = applyHandler(path, handler)
+    const result = applyHandler(path, handler, stateMap)
     const {flag} = result
 
     if (flag !== NOT_MODIFIED) {
@@ -88,10 +97,14 @@ function transformPathList (listPath, callback, allowMultiple) {
   return {flag: NOT_MODIFIED, path: listPath}
 }
 
-function applyPhase (path, visitor, phase) {
+function applyPhase (path, visitor, phase, stateMap) {
   const handlerMap = visitor[phase]
   const {flag, path: [result]} = transformPathList([path],
-    eachPath => applyHandlerList(eachPath, handlerMap.get(eachPath.type))
+    eachPath => applyHandlerList(
+      eachPath,
+      handlerMap.get(eachPath.type),
+      stateMap
+    )
   )
 
   if (flag === NOT_MODIFIED) {
@@ -104,16 +117,16 @@ function applyPhase (path, visitor, phase) {
   return {flag: REPLACED, path: result}
 }
 
-function transformPath (path, visitor) {
+function transformPath (path, visitor, stateMap) {
   // enter phase
-  const result = applyPhase(path, visitor, 'enter')
+  const result = applyPhase(path, visitor, 'enter', stateMap)
   const {flag: enterFlag, path: newPath} = result
 
   if (enterFlag === DELETED) {
     return result
   }
   if (enterFlag === REPLACED) {
-    const recurResult = transformPath(newPath, visitor)
+    const recurResult = transformPath(newPath, visitor, stateMap)
     const {flag: newFlag, path: newRecurPath} = recurResult
 
     if (newFlag === DELETED) {
@@ -134,7 +147,7 @@ function transformPath (path, visitor) {
       if (isArray) {
         const {flag, path: newChildArray} = transformPathList(
           child,
-          childPath => transformPath(childPath, visitor),
+          childPath => transformPath(childPath, visitor, stateMap),
           true
         )
 
@@ -146,7 +159,7 @@ function transformPath (path, visitor) {
           }
         }
       } else {
-        const {flag, path: newPath} = transformPath(child, visitor)
+        const {flag, path: newPath} = transformPath(child, visitor, stateMap)
 
         if (flag !== NOT_MODIFIED) {
           children.set(name, newPath)
@@ -160,7 +173,7 @@ function transformPath (path, visitor) {
   }
 
   // exit phase
-  const exitResult = applyPhase(path, visitor, 'exit')
+  const exitResult = applyPhase(path, visitor, 'exit', stateMap)
   const {flag: exitFlag, path: exitPath} = exitResult
 
   if (exitFlag === DELETED || (!modified && exitFlag === NOT_MODIFIED)) {
@@ -170,5 +183,6 @@ function transformPath (path, visitor) {
 }
 
 export function Transform (path, visitor) {
-  return transformPath(path, visitor).path
+  const stateMap = new MapX(() => new Map())
+  return transformPath(path, visitor, stateMap).path
 }

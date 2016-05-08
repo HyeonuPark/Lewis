@@ -26,26 +26,27 @@ function normalizeHandler (rawHandler) {
 export function Visitor (visitors, subtypeMap) {
   const enterMap = new MapX(() => [])
   const exitMap = new MapX(() => [])
+  let stateKey = 0
 
   for (let eachVisitor of iterable(visitors)) {
-    for (let [key, rawHandler] of Object.entries(eachVisitor)) {
+    stateKey += 1
+    
+    for (let [typeName, rawHandler] of Object.entries(eachVisitor)) {
       const {enter, exit} = normalizeHandler(rawHandler)
-      const typeSet = flattenTypes(key.split('|'), subtypeMap)
+      const typeSet = flattenTypes(typeName.split('|'), subtypeMap)
+      const enterObj = {key: stateKey, handler: enter}
+      const exitObj = {key: stateKey, handler: exit}
 
       for (let type of typeSet) {
         if (enter) {
-          enterMap.get(type).push(enter)
+          enterMap.get(type).push(enterObj)
         }
         if (exit) {
-          exitMap.get(type).push(exit)
+          exitMap.get(type).push(exitObj)
         }
       }
     }
   }
 
   return {enter: enterMap, exit: exitMap}
-}
-
-export function replacePath (path, newNode) {
-  
 }

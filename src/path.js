@@ -2,8 +2,7 @@ import {map} from 'iterator-util'
 
 import {unwrapPath, childPath, iterateDeep} from './path-helper'
 import {ScopeContainer} from './scope'
-import {Visitor} from './traverse'
-import {Search} from './search'
+import {Visitor} from './visitor'
 import {Transform} from './transform'
 import {Convert} from './convert'
 import {
@@ -79,9 +78,6 @@ export class Path {
     if (parent && parent._scopeContainer === _scopeContainer) {
       this._scopeContainer = ScopeContainer(_scopeContainer)
     }
-  }
-  search (rawVisitor) {
-    return Search(this, Visitor(rawVisitor, this._subtypeMap))
   }
   transform (rawVisitor) {
     return Transform(this, Visitor(rawVisitor, this._subtypeMap))

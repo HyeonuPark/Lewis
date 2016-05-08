@@ -22,8 +22,7 @@ describe('Advanced scope check for validate namespace fixture', () => {
   define('Declaration', [
     {
       name: 'name',
-      type: 'string',
-      visitable: false
+      type: 'string'
     },
     {
       name: 'init',
@@ -62,8 +61,7 @@ describe('Advanced scope check for validate namespace fixture', () => {
   define('Identifier', [
     {
       name: 'name',
-      type: 'string',
-      visitable: false
+      type: 'string'
     }
   ], {
     alias: 'Expression',
@@ -81,8 +79,7 @@ describe('Advanced scope check for validate namespace fixture', () => {
     {
       name: 'arguments',
       type: 'string',
-      isArray: true,
-      visitable: false
+      isArray: true
     },
     {
       name: 'body',
