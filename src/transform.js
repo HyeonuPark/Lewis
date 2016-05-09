@@ -1,5 +1,5 @@
 import {unwrapPath, clonePath, deletePath} from './path-helper'
-import {reservedTypes} from './util'
+import {primitiveTypes} from './util'
 import {MapX} from './mapx'
 
 const NOT_MODIFIED = 0
@@ -49,8 +49,8 @@ function applyHandler (path, {handler, key}, stateMap) {
 }
 
 function applyHandlerList (path, listHandler, stateMap) {
-  // primitive values not changed
-  if (reservedTypes.has(path.type)) {
+  // primitive values will not be changed
+  if (primitiveTypes.has(path.type)) {
     return {
       flag: NOT_MODIFIED,
       path
@@ -151,7 +151,7 @@ function transformPath (path, visitor, stateMap) {
   let modified = false
 
   // primitive types doesn't have children
-  if (!reservedTypes.has(type)) {
+  if (!primitiveTypes.has(type)) {
     for (let {name, isArray} of _structMap.get(type).children) {
       const child = children.get(name)
 

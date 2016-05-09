@@ -1,10 +1,10 @@
-import {reservedTypes, nodeTypeOf} from './util'
+import {primitiveTypes, nodeTypeOf} from './util'
 import {MapX} from './mapx'
 
 export function Convert (path, visitor) {
   const {type, children, _structMap} = path
 
-  if (reservedTypes.has(type)) {
+  if (primitiveTypes.has(type)) {
     return path.node
   }
 

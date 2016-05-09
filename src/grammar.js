@@ -1,9 +1,9 @@
 import {MapX} from './mapx'
-import {reservedTypes, noop, assertType} from './util'
+import {primitiveTypes, noop, assertType} from './util'
 import {Spec} from './spec'
 
 export function Grammar () {
-  const typePool = new Set(reservedTypes)
+  const typePool = new Set(primitiveTypes)
   const structMap = new Map()
   const subtypeMap = new MapX(() => [])
 
@@ -11,8 +11,8 @@ export function Grammar () {
     define (nodeType, children, {alias, validate = noop} = {}) {
       assertType(nodeType, 'string', 'Node type')
 
-      if (reservedTypes.has(nodeType)) {
-        throw new Error(`Cannot re-define reserved types: ${nodeType}`)
+      if (primitiveTypes.has(nodeType)) {
+        throw new Error(`Cannot re-define primitive types: ${nodeType}`)
       }
       if (typePool.has(nodeType)) {
         throw new Error(`Duplicated type definition: ${nodeType}`)

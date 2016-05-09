@@ -5,7 +5,7 @@ import {Visitor} from './visitor'
 import {Transform} from './transform'
 import {Convert} from './convert'
 import {
-  reservedTypes, assertType,
+  primitiveTypes, assertType,
   nodeTypeOf, assertNodeType, flattenTypes
 } from './util'
 
@@ -21,7 +21,7 @@ export class Path {
     const childrenPath = this.children = new Map()
 
     // argument 'node' is just a value, not a valid node
-    if (reservedTypes.has(type)) {
+    if (primitiveTypes.has(type)) {
       this._isValid = true
       return
     }

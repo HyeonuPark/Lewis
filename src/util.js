@@ -6,7 +6,7 @@ import {unwrapPath} from './path-helper'
 
 export const noop = () => {}
 
-export const reservedTypes = new Set([
+export const primitiveTypes = new Set([
   'null', 'string', 'boolean',
   'number', 'object'
 ])
@@ -48,11 +48,11 @@ export function nodeTypeOf (_maybeNode) {
   ) {
     return 'null'
   }
-  if (typeofNode !== 'object' && reservedTypes.has(typeofNode)) {
+  if (typeofNode !== 'object' && primitiveTypes.has(typeofNode)) {
     return typeofNode
   }
   const nodeType = maybeNode.type
-  if (typeof nodeType !== 'string' || reservedTypes.has(nodeType)) {
+  if (typeof nodeType !== 'string' || primitiveTypes.has(nodeType)) {
     return 'object'
   }
   return nodeType
