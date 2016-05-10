@@ -12,6 +12,10 @@ export const primitiveTypes = new Set([
 ])
 
 export function isValidType (value, type) {
+  if (Array.isArray(type)) {
+    return type.some(elem => isValidType(value, elem))
+  }
+
   const detectedRaw = detectType(value)
   const detected = detectedRaw === 'undefined'
     ? 'null'

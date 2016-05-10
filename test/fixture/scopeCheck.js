@@ -14,14 +14,12 @@ describe('Check scope to validate namespace fixture', () => {
     }
   ], {
     alias: 'Node',
-    validate (path) {
-      path.childScope()
-    }
+    scope: 'block'
   })
 
   define('Identifier', [
     {
-      name: 'id',
+      name: 'name',
       type: 'string'
     },
     {
@@ -31,19 +29,19 @@ describe('Check scope to validate namespace fixture', () => {
   ], {
     alias: 'Node',
     validate (path) {
-      const idScope = path.scope('id')
-      const id = path.get('id').node
+      const scope = path.scope('id')
+      const name = path.get('name').node
 
       if (path.get('declare').node) {
-        if (idScope.hasOwn(id)) {
-          return `duplicated declaration within same scope: ${id}`
+        if (scope.hasOwn(name)) {
+          return `duplicated declaration within same scope: ${name}`
         }
-        idScope.set(id, true)
+        scope.add(name)
         return
       }
 
-      if (!idScope.has(id)) {
-        return `identifier not declared: ${id}`
+      if (!scope.has(name)) {
+        return `identifier not declared: ${name}`
       }
     }
   })
@@ -72,6 +70,8 @@ describe('Check scope to validate namespace fixture', () => {
       t.Identifier('a', false),
       t.Identifier('a', true)
     ])
+
+    loadAst(ast1).scope('id')._printScopeStack()
 
     expect(() => loadAst(ast1))
       .to.throw('identifier not declared: a')

@@ -8,8 +8,12 @@ export function Grammar () {
   const subtypeMap = new MapX(() => [])
 
   return {
-    define (nodeType, children, {alias, validate = noop} = {}) {
+    define (nodeType, children, {alias, scope, validate = noop} = {}) {
       assertType(nodeType, 'string', 'Node type')
+      assertType(children, ['array', 'null'], 'Children')
+      assertType(alias, ['string', 'null'], 'Type alias')
+      assertType(scope, ['string', 'null'], 'Scope type')
+      assertType(validate, 'function', 'Node validator')
 
       if (primitiveTypes.has(nodeType)) {
         throw new Error(`Cannot re-define primitive types: ${nodeType}`)
@@ -19,7 +23,7 @@ export function Grammar () {
       }
       typePool.add(nodeType)
 
-      if (Array.isArray(children)) {
+      if (children) {
         for (let child of children) {
           assertType(child.name, 'string', 'Child name')
 
@@ -36,10 +40,10 @@ export function Grammar () {
           child.visitable = child.visitable !== false // default value is true
         }
 
-        structMap.set(nodeType, {children, validate})
+        structMap.set(nodeType, {children, validate, scope})
       }
 
-      if (typeof alias === 'string') {
+      if (alias) {
         subtypeMap.get(alias).push(nodeType)
       }
     },

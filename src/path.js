@@ -33,6 +33,7 @@ export class Path {
     }
 
     this._validateFunc = struct.validate
+    this._scopeType = struct.scope
 
     // build child paths
     for (let {name, type: childType, isArray, visitable} of struct.children) {
@@ -71,14 +72,6 @@ export class Path {
   }
   scope (scopeType) {
     return this._scopeContainer.get(scopeType)
-  }
-  anchorScope () {
-    this._scopeContainer = this._scopeContainer.anchor()
-    return this
-  }
-  childScope () {
-    this._scopeContainer = this._scopeContainer.child()
-    return this
   }
   transform (rawVisitor) {
     return Transform(this, Visitor(rawVisitor, this._subtypeMap))

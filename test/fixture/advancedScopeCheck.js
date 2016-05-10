@@ -14,9 +14,7 @@ describe('Advanced scope check for validate namespace fixture', () => {
     }
   ], {
     alias: 'Statement',
-    validate (path) {
-      path.childScope()
-    }
+    scope: 'block'
   })
 
   define('Declaration', [
@@ -35,9 +33,7 @@ describe('Advanced scope check for validate namespace fixture', () => {
       const initType = path.get('init').type
       const scope = path.scope('id')
 
-      path.anchorScope()
-
-      if (scope.get(name)) {
+      if (scope.has(name)) {
         return `duplicated declaration within same scope: ${name}`
       }
       scope.set(name, initType)
@@ -50,10 +46,7 @@ describe('Advanced scope check for validate namespace fixture', () => {
       type: 'Expression'
     }
   ], {
-    alias: 'Statement',
-    validate (path) {
-      path.anchorScope()
-    }
+    alias: 'Statement'
   })
 
   define('Expression')
@@ -87,12 +80,12 @@ describe('Advanced scope check for validate namespace fixture', () => {
     }
   ], {
     alias: 'Expression',
+    scope: 'block',
     validate (path) {
-      path.childScope()
       const scope = path.scope('id')
 
-      for ({node: arg} of path.get('arguments')) {
-        scope.set(arg, null)
+      for (let {node: arg} of path.get('arguments')) {
+        scope.add(arg)
       }
     }
   })

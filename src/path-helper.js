@@ -32,13 +32,10 @@ function _validatePath (path, queue) {
     }
   }
 
-  const {parent, _validateFunc} = path
+  const {parent, _validateFunc, _scopeType} = path
 
-  if (parent && parent._scopeContainer) {
-    path._scopeContainer = parent._scopeContainer
-  } else {
-    path._scopeContainer = new ScopeContainer()
-  }
+  const parentContainer = parent && parent._scopeContainer
+  path._scopeContainer = new ScopeContainer(parentContainer, _scopeType)
 
   if (_validateFunc) {
     const result = _validateFunc(path)

@@ -67,7 +67,7 @@ export function Spec (typePool, _structMap, _subtypeMap) {
   })
 
   const structMap = IMap().withMutations(imap => {
-    for (let [nodeType, {children, validate}] of _structMap) {
+    for (let [nodeType, {children, scope, validate}] of _structMap) {
       const listChildren = IList(map(children,
         ({name, type, isArray, visitable}) => ({
           name,
@@ -76,7 +76,7 @@ export function Spec (typePool, _structMap, _subtypeMap) {
           visitable
         })
       ))
-      imap.set(nodeType, {validate, children: listChildren})
+      imap.set(nodeType, {scope, validate, children: listChildren})
     }
   })
 

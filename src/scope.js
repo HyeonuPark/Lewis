@@ -1,67 +1,44 @@
 import {MapX} from './mapx'
 
 export class Scope {
-  constructor (head, tail, children = new Set()) {
-    this.head = head
-    this.tail = tail
-    this.children = children
+  constructor (parent) {
+    this.type = 'basic'
+    this.parent = parent
+    this.children = new Set()
+    this.data = new Map()
 
-    head.scope = head.scope || this
-    tail.scope = this
+    parent && parent.addChild(this)
   }
   set (key, value) {
-    const {tail} = this
-    const {prev} = tail
-
-    const element = {type: 'element', key, value, prev}
-    tail.prev = element
-    return element
+    this.data.set(key, value)
+    return this
   }
   add (key) {
     return this.set(key, null)
   }
-  *iterate () {
-    let current = this.tail
+  get (key) {
+    const {data, parent} = this
 
-    while (current) {
-      yield current
-      current = current.prev
+    if (data.has(key)) {
+      return data.get(key)
+    }
+    if (parent) {
+      return parent.get(key)
     }
   }
-  get (queryKey) {
-    for (let {type, key, value} of this.iterate()) {
-      if (type === 'element' && key === queryKey) {
-        return value
-      }
-    }
+  has (key) {
+    const {parent, data} = this
 
-    return void 0
-  }
-  has (queryKey) {
-    for (let {type, key} of this.iterate()) {
-      if (type === 'element' && key === queryKey) {
-        return true
-      }
+    if (data.has(key)) {
+      return true
     }
-
+    if (parent && parent.has(key)) {
+      return true
+    }
     return false
   }
-  hasOwn (queryKey) {
-    const {head} = this
-
-    for (let elem of this.iterate()) {
-      const {type, key} = elem
-
-      if (type === 'element' && key === queryKey) {
-        return true
-      }
-
-      if (elem === head) {
-        return false
-      }
-    }
-
-    return false
+  hasOwn (key) {
+    return this.data.has(key)
   }
   _hasDeep (key) {
     if (this.hasOwn(key)) {
@@ -79,62 +56,138 @@ export class Scope {
   hasDeep (key) {
     return this.has(key) || this._hasDeep(key)
   }
-  anchor () {
-    const {head, tail, children} = this
-
-    const newTail = {
-      type: 'tail',
-      prev: tail.prev
-    }
-
-    tail.prev = newTail
-
-    return new Scope(head, newTail, children)
+  hasChild (child) {
+    return this.children.has(child)
   }
-  child () {
-    const {tail, children} = this
-
-    const newHead = {
-      type: 'head',
-      scope: null,
-      prev: tail
-    }
-    const newTail = {
-      type: 'tail',
-      scope: null,
-      prev: newHead
-    }
-
-    const newScope = new Scope(newHead, newTail)
-    children.add(newScope)
-    return newScope
+  addChild (child) {
+    child.parent = this
+    this.children.add(child)
+    return this
   }
   removeChild (child) {
     this.children.delete(child)
     return this
   }
+  _printScopeStack () {
+    console.log(`Scope: ${this.data.size} ${[...this.data.keys()].join(', ')}`)
+    for (let child of this.children) {
+      child._printScopeStack()
+    }
+  }
 }
 
-export function createScope () {
-  const head = {type: 'head'}
-  const tail = {type: 'tail', prev: head}
-  return new Scope(head, tail)
+function* iterateBlockChildren (blockScope) {
+  let current = blockScope.lastChild
+
+  while (current && current !== blockScope) {
+    yield current
+    current = current.parent
+  }
 }
 
-export class ScopeContainer {
-  constructor (parent, isAnchor) {
-    const parentData = this.parent = parent && parent.data
-    let getScope
-
-    if (!parentData) {
-      getScope = createScope
-    } else if (isAnchor) {
-      getScope = scopeType => parentData.get(scopeType).anchor()
-    } else {
-      getScope = scopeType => parentData.get(scopeType).child()
+export class BlockScope extends Scope {
+  constructor (_parent) {
+    let parent = _parent
+    let parentBlock = _parent
+    while (parentBlock) {
+      parentBlock = parentBlock.parent
+      if (parentBlock instanceof BlockScope) {
+        parent = parentBlock
+        break
+      }
     }
 
-    this.data = new MapX(getScope)
+    super(parent)
+    this.type = 'block'
+    this.lastChild = this
+  }
+  get (key) {
+    const {lastChild} = this
+
+    if (lastChild === this) {
+      return super.get(key)
+    }
+    return lastChild.get(key)
+  }
+  has (key) {
+    const {lastChild} = this
+
+    if (lastChild === this) {
+      return super.has(key)
+    }
+    return lastChild.has(key)
+  }
+  hasOwn (key) {
+    const {lastChild} = this
+
+    if (lastChild === this) {
+      return super.hasOwn(key)
+    }
+    return lastChild.hasOwn(key)
+  }
+  hasChild (givenChild) {
+    for (let child of iterateBlockChildren(this)) {
+      if (child === givenChild) {
+        return true
+      }
+    }
+    return false
+  }
+  addChild (child) {
+    const {lastChild} = this
+
+    if (lastChild === this) {
+      super.addChild(child)
+      return this
+    }
+
+    child.parent = lastChild
+    lastChild.addChild(child)
+    return this
+  }
+  _removeChild (child) {
+    return super._removeChild(child)
+  }
+  removeChild (givenChild) {
+    for (let child of iterateBlockChildren(this)) {
+      if (child === givenChild) {
+        const {parent} = child
+
+        if (parent) {
+          if (parent.type === 'block') {
+            parent._removeChild(child)
+          }
+          parent.removeChild(child)
+
+          for (let grandChild of child.children) {
+            parent.addChild(grandChild)
+          }
+        }
+        return true
+      }
+    }
+    return false
+  }
+}
+
+const scopeMap = new Map([
+  ['basic', Scope],
+  ['block', BlockScope]
+])
+
+export class ScopeContainer {
+  constructor (parent, scopeType = 'basic') {
+    this.parent = parent
+    this.type = scopeType
+
+    const ScopeClass = scopeMap.get(scopeType)
+
+    this.data = new MapX(key => {
+      const parent = this.parent
+      const parentData = parent && parent.data
+      const parentScope = parentData && parentData.get(key)
+      return new ScopeClass(parentScope)
+    })
   }
   get (scopeType) {
     return this.data.get(scopeType)
@@ -147,11 +200,5 @@ export class ScopeContainer {
         parent.get(type).removeChild(scope)
       }
     }
-  }
-  anchor () {
-    return new ScopeContainer(this, true)
-  }
-  child () {
-    return new ScopeContainer(this, false)
   }
 }
