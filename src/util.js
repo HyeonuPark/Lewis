@@ -4,12 +4,12 @@ import detectType from 'type-detect'
 
 import {unwrapPath} from './path-helper'
 
-export const noop = () => {}
-
 export const primitiveTypes = new Set([
   'null', 'string', 'boolean',
-  'number', 'object'
+  'number', 'object', 'root'
 ])
+
+export function noop () {}
 
 export function isValidType (value, type) {
   if (Array.isArray(type)) {

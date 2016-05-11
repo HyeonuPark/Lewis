@@ -14,7 +14,7 @@ describe('Advanced scope check for validate namespace fixture', () => {
     }
   ], {
     alias: 'Statement',
-    scope: 'block'
+    childScope: true
   })
 
   define('Declaration', [
@@ -68,7 +68,7 @@ describe('Advanced scope check for validate namespace fixture', () => {
     }
   })
 
-  define('Function', [
+  define('Func', [
     {
       name: 'arguments',
       type: 'string',
@@ -80,7 +80,6 @@ describe('Advanced scope check for validate namespace fixture', () => {
     }
   ], {
     alias: 'Expression',
-    scope: 'block',
     validate (path) {
       const scope = path.scope('id')
 
@@ -110,8 +109,9 @@ describe('Advanced scope check for validate namespace fixture', () => {
     const ast = t.Block([
       t.Declaration('var1', null),
       t.Declaration('var2', null),
+      t.ExpressionElem(t.Identifier('var1')),
       t.Declaration('fn1',
-        t.Function(['arg1'], t.Block([
+        t.Func(['arg1'], t.Block([
           t.ExpressionElem(
             t.Call(t.Identifier('arg1'), [])
           )
@@ -136,6 +136,6 @@ describe('Advanced scope check for validate namespace fixture', () => {
       t.Declaration('var2')
     ])
 
-    expect(loadAst(ast)).to.be.an('object')
+    expect(() => loadAst(ast)).to.throw('identifier not declared: var2')
   })
 })

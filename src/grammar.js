@@ -8,11 +8,11 @@ export function Grammar () {
   const subtypeMap = new MapX(() => [])
 
   return {
-    define (nodeType, children, {alias, scope, validate = noop} = {}) {
+    define (nodeType, children, {alias, childScope, validate = noop} = {}) {
       assertType(nodeType, 'string', 'Node type')
       assertType(children, ['array', 'null'], 'Children')
       assertType(alias, ['string', 'null'], 'Type alias')
-      assertType(scope, ['string', 'null'], 'Scope type')
+      assertType(childScope, ['boolean', 'null'], 'childScope flag')
       assertType(validate, 'function', 'Node validator')
 
       if (primitiveTypes.has(nodeType)) {
@@ -26,6 +26,8 @@ export function Grammar () {
       if (children) {
         for (let child of children) {
           assertType(child.name, 'string', 'Child name')
+          assertType(child.isArray, ['boolean', 'null'], 'isArray flag')
+          assertType(child.visitable, ['boolean', 'null'], 'visitable flag')
 
           let childType = child.type
           if (!Array.isArray(childType)) {
@@ -40,7 +42,7 @@ export function Grammar () {
           child.visitable = child.visitable !== false // default value is true
         }
 
-        structMap.set(nodeType, {children, validate, scope})
+        structMap.set(nodeType, {children, validate, childScope})
       }
 
       if (alias) {

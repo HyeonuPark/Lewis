@@ -29,12 +29,12 @@ describe('Dynamic scope check fixture', () => {
       isArray: true
     }
   ], {
-    scope: 'block'
+    childScope: true
   })
 
   const {types: t, loadAst} = buildSpec()
 
-  it('should reflect current scope even after transformed', () => {
+  it('should reflect current scope even after transformation', () => {
     const visitor = {
       Node (path) {
         if (path.get('name').node === 'yes') {
@@ -47,20 +47,29 @@ describe('Dynamic scope check fixture', () => {
       t.Node('a', t.Body([])),
       t.Node('b', t.Body([])),
       t.Node('yes', t.Body([
-        t.Node('c', t.Body([]))
-      ]))
+        t.Node('c', t.Body([])),
+        t.Node('d', t.Body([])),
+        t.Node('e', t.Body([]))
+      ])),
+      t.Node('f', t.Body([])),
+      t.Node('g', t.Body([]))
     ])
 
-    const result = loadAst(ast).transform(visitor)
+    const loaded = loadAst(ast)
+    const result = loaded.transform(visitor)
 
     expect(result.node).to.deep.equal(t.Body([
       t.Node('a', t.Body([])),
       t.Node('b', t.Body([])),
       t.Node('no', t.Body([
-        t.Node('c', t.Body([]))
-      ]))
+        t.Node('c', t.Body([])),
+        t.Node('d', t.Body([])),
+        t.Node('e', t.Body([]))
+      ])),
+      t.Node('f', t.Body([])),
+      t.Node('g', t.Body([]))
     ]))
-    expect(result._scopeContainer.type).to.equal('block')
+
     expect(result.scope('id').hasOwn('yes')).to.be.false
     expect(result.scope('id').hasOwn('no')).to.be.true
   })

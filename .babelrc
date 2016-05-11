@@ -1,1 +1,10 @@
-{"presets": ["es2015"]}
+{
+  "env": {
+    "development": {
+      "presets": ["es2015-node6"]
+    },
+    "production": {
+      "presets": ["es2015"]
+    }
+  }
+}

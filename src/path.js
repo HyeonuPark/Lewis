@@ -32,9 +32,6 @@ export class Path {
       throw new Error(`Type ${type} is only for alias check`)
     }
 
-    this._validateFunc = struct.validate
-    this._scopeType = struct.scope
-
     // build child paths
     for (let {name, type: childType, isArray, visitable} of struct.children) {
       const childNode = node[name]
@@ -46,13 +43,13 @@ export class Path {
         const childList = childNode.map(eachNode => {
           assertNodeType(eachNode, childType, `Each ${type}->${name}`)
 
-          return childPath(this, eachNode)
+          return childPath(this, eachNode, true)
         })
         childrenPath.set(name, childList)
       } else {
         assertNodeType(childNode, childType, `${type}->${name}`)
 
-        const child = childPath(this, childNode)
+        const child = childPath(this, childNode, true)
         childrenPath.set(name, child)
       }
     }

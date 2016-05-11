@@ -5,3 +5,4 @@ local
 .npmignore
 .babelrc
 .travis.yml
+npm*.log

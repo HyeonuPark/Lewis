@@ -1,4 +1,4 @@
-import {unwrapPath, clonePath, deletePath} from './path-helper'
+import {unwrapPath, clonePath, unmountPath} from './path-helper'
 import {primitiveTypes} from './util'
 import {MapX} from './mapx'
 
@@ -19,7 +19,7 @@ function applyHandler (path, {handler, key}, stateMap) {
 
   if (result === null) {
     const newPath = clonePath(path, null)
-    deletePath(path)
+    unmountPath(path)
 
     return {
       flag: DELETED,
@@ -31,7 +31,7 @@ function applyHandler (path, {handler, key}, stateMap) {
 
   if (Array.isArray(resultNode)) {
     const newPath = resultNode.map(elem => clonePath(path, elem))
-    deletePath(path)
+    unmountPath(path)
 
     return {
       flag: REPLACED_MULTIPLE,
@@ -40,7 +40,7 @@ function applyHandler (path, {handler, key}, stateMap) {
   }
 
   const newPath = clonePath(path, resultNode)
-  deletePath(path)
+  unmountPath(path)
 
   return {
     flag: REPLACED,

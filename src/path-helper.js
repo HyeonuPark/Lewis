@@ -2,6 +2,7 @@ import {Queue} from 'iterable-queue'
 
 import {Path} from './path'
 import {ScopeContainer} from './scope'
+import {primitiveTypes} from './util'
 
 export function isPath (maybePath) {
   return maybePath instanceof Path
@@ -17,53 +18,117 @@ export function unwrapPath (maybePath) {
   return maybePath
 }
 
-function _validatePath (path, queue) {
-  if (path._scopeContainer) {
-    return
+function execValidator (path, {validate, childScope}, deferred) {
+  const parentContainer = path.parent && path.parent._scopeContainer
+  path._scopeContainer = new ScopeContainer(parentContainer, childScope)
+
+  if (typeof validate === 'function') {
+    const result = validate(path)
+
+    if (typeof result === 'string') {
+      const stack = path._scopeContainer.getScopeStackReport()
+      throw new Error(`ValidateError - ${result}\n${stack}`)
+    }
   }
 
   for (let child of path.children.values()) {
     if (Array.isArray(child)) {
       for (let elem of child) {
-        queue.add(elem)
+        prepareValidation(elem, deferred)
       }
     } else {
-      queue.add(child)
+      prepareValidation(child, deferred)
     }
   }
+}
 
-  const {parent, _validateFunc, _scopeType} = path
+function prepareValidation (path, deferred) {
+  const {type, parent, _structMap} = path
 
-  const parentContainer = parent && parent._scopeContainer
-  path._scopeContainer = new ScopeContainer(parentContainer, _scopeType)
+  if (primitiveTypes.has(type)) {
+    return
+  }
 
-  if (_validateFunc) {
-    const result = _validateFunc(path)
-    if (typeof result === 'string') {
-      throw new Error(`ValidateError - ${result}`)
+  const struct = _structMap.get(type)
+  const {childScope} = struct
+
+  if (childScope) {
+    deferred.push(path)
+  } else {
+    execValidator(path, struct, deferred)
+  }
+}
+
+function validateScopedPath (path) {
+  const {_structMap, type} = path
+
+  const struct = _structMap.get(type)
+
+  const deferred = []
+  execValidator(path, struct, deferred)
+
+  for (let deferredPath of deferred) {
+    validateScopedPath(deferredPath)
+  }
+}
+
+function getPseudoRoot (originPath) {
+  return {
+    type: 'root',
+    _structMap: {
+      get: () => ({childScope: true})
+    },
+    children: {
+      values: () => [originPath]
     }
   }
 }
 
 export function validatePath (path) {
-  const queue = Queue(path)
-  for (let descendant of queue) {
-    _validatePath(descendant, queue)
+  const {_structMap, type} = path
+
+  if (primitiveTypes.has(type)) {
+    return
   }
-  return path
+
+  const {childScope} = _structMap.get(type)
+
+  if (childScope) {
+    validateScopedPath(path)
+  } else {
+    validateScopedPath(getPseudoRoot(path))
+  }
 }
 
-export function childPath (parentPath, childNode) {
+function getPseudoRoot (originPath) {
+  return {
+    type: 'root',
+    _structMap: {
+      get: () => ({childScope: true})
+    },
+    children: {
+      values: () => [originPath]
+    }
+  }
+}
+
+export function childPath (parentPath, childNode, skipValidation) {
   const {_structMap, _subtypeMap} = parentPath
   const newPath = new Path(_structMap, _subtypeMap, childNode, parentPath)
-  validatePath(newPath)
+
+  if (!skipValidation) {
+    validatePath(newPath)
+  }
   return newPath
 }
 
-export function clonePath (originPath, newNode) {
+export function clonePath (originPath, newNode, skipValidation) {
   const {_structMap, _subtypeMap, parent} = originPath
   const newPath = new Path(_structMap, _subtypeMap, newNode, parent)
-  validatePath(newPath)
+
+  if (!skipValidation) {
+    validatePath(newPath)
+  }
   return newPath
 }
 
@@ -73,6 +138,6 @@ export function createPath (structMap, subtypeMap, node, parent) {
   return path
 }
 
-export function deletePath (path) {
-  path._scopeContainer.delete()
+export function unmountPath (path) {
+  path._scopeContainer.unmount()
 }
