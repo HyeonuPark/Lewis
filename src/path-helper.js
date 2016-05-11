@@ -50,9 +50,9 @@ function prepareValidation (path, deferred) {
   }
 
   const struct = _structMap.get(type)
-  const {childScope} = struct
+  const {lazy} = struct
 
-  if (childScope) {
+  if (lazy) {
     deferred.push(path)
   } else {
     execValidator(path, struct, deferred)
@@ -76,7 +76,7 @@ function getPseudoRoot (originPath) {
   return {
     type: 'root',
     _structMap: {
-      get: () => ({childScope: true})
+      get: () => ({childScope: true, lazy: true})
     },
     children: {
       values: () => [originPath]
@@ -91,9 +91,9 @@ export function validatePath (path) {
     return
   }
 
-  const {childScope} = _structMap.get(type)
+  const {lazy} = _structMap.get(type)
 
-  if (childScope) {
+  if (lazy) {
     validateScopedPath(path)
   } else {
     validateScopedPath(getPseudoRoot(path))
@@ -104,7 +104,7 @@ function getPseudoRoot (originPath) {
   return {
     type: 'root',
     _structMap: {
-      get: () => ({childScope: true})
+      get: () => ({childScope: true, lazy: true})
     },
     children: {
       values: () => [originPath]

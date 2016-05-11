@@ -192,7 +192,8 @@ export class ScopeContainer {
   getScopeStackReport () {
     const result = []
     for (let [scopeType, scope] of this.scopeMap) {
-      result.push(`- ${scopeType}: ${[...scope.iterateScopeElement()].join(' ')}`)
+      const itr = scope.iterateScopeElement()
+      result.push(`- ${scopeType}: ${[...itr].join(' ')}`)
     }
     return result.join('\n')
   }
