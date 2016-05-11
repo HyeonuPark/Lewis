@@ -1,6 +1,6 @@
 {
   "name": "lewis",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Syntax agnostic compiler framework",
   "main": "bin/index.js",
   "scripts": {
