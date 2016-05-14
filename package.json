@@ -5,11 +5,12 @@
   "main": "bin/index.js",
   "scripts": {
     "build": "NODE_ENV=production babel src --out-dir bin",
-    "unit": "mocha test --require babel-polyfill --require babel-register",
+    "unit": "mocha test/unit --require babel-polyfill --require babel-register",
     "fixture": "mocha test/fixture --require babel-polyfill --require babel-register",
     "test": "npm run unit && npm run fixture",
     "preversion": "npm test",
-    "postversion": "npm run build && npm publish && git push origin master --tags"
+    "version": "git checkout master && git merge dev",
+    "postversion": "npm run build && npm publish && git push origin master --tags && git checkout dev"
   },
   "repository": {
     "type": "git",
@@ -35,7 +36,6 @@
   },
   "dependencies": {
     "immutable": "^3.8.1",
-    "iterable-queue": "^1.1.0",
     "iterator-util": "^1.4.1",
     "type-detect": "^2.0.0"
   }
