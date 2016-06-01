@@ -1,4 +1,4 @@
-import {indexed} from 'iterator-util'
+import {indexed} from 'iterlib'
 
 import {unwrapNode, assertType} from './util'
 
@@ -12,7 +12,7 @@ export const buildFactory = (spec, type, children) => (...args) => {
       type: childType,
       isArray
     }
-  } of indexed(children)) {
+  } of children::indexed()) {
     const given = unwrapNode(args[index])
 
     if (isArray) {

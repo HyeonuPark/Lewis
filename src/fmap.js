@@ -1,14 +1,12 @@
-import {noop} from './util'
-
 export class FMap extends Map {
-  constructor (iterable, fallback) {
-    if (typeof iterable === 'function') {
-      fallback = iterable
-      iterable = null
+  constructor (fallback, iterable) {
+    super(iterable)
+
+    if (typeof fallback !== 'function') {
+      return new Map(iterable)
     }
 
-    super(iterable)
-    this.fallback = typeof fallback === 'function' ? fallback : noop
+    this.fallback = fallback
   }
   get (key) {
     const result = super.get(key)

@@ -1,46 +1,56 @@
 import {Map as IMap, Set as ISet} from 'immutable'
-import {indexed, resolve as iterable} from 'iterator-util'
+import {map, toArray, resolve as iterable} from 'iterlib'
 
 import {buildFactory} from './factory'
 import {FMap} from './fmap'
-import {unwrapNode, panic} from './util'
+import {primitiveTypes, unwrapNode, panic} from './util'
+
+const primitiveMap = primitiveTypes::map(el => [el, [el]])::toArray()
 
 export class Spec {
-  constructor (grammar) {
-    const _subtypeMap = new FMap(() => [])
-    const _metadata = new Map()
+  constructor (rules) {
+    const _subtypeMap = new FMap(() => [], primitiveMap)
     const factory = this.factory = Object.create(null)
 
-    for (let [type, {children, alias, scope, validate}] of grammar) {
-      _subtypeMap.get(type).push(type)
-      let ancestor = alias
+    this.metadata = IMap().withMutations(_metadata => {
+      for (let [type, {children, alias, scope, init}] of rules) {
+        _subtypeMap.get(type).push(type)
 
-      while (ancestor) {
-        _subtypeMap.get(ancestor).push(type)
-        const nextAncestor = grammar.get(ancestor)
-        ancestor = nextAncestor && nextAncestor.alias
+        let ancestor = alias
+
+        while (ancestor) {
+          _subtypeMap.get(ancestor).push(type)
+          const nextAncestor = rules.get(ancestor)
+          ancestor = nextAncestor && nextAncestor.alias
+        }
+
+        _metadata.set(type, Object.freeze({children, scope, init}))
+
+        if (children) {
+          factory[type] = buildFactory(this, type, children)
+        }
       }
-
-      _metadata.set(type, {scope, validate})
-
-      if (children) {
-        factory[type] = buildFactory(this, type, children)
-      }
-    }
+    })
 
     this.subtypeMap = IMap().withMutations(map => {
       for (let [type, subtypeList] of _subtypeMap) {
         map.set(type, ISet(subtypeList))
       }
     })
-
-    this.metadata = IMap(_metadata)
+  }
+  has (type) {
+    return this.metadata.has(type)
   }
   isAliasOf (maybeAlias, maybeSubtype) {
-    return this.subtypeMap.get(maybeAlias).has(maybeSubtype)
+    const subtypeSet = this.subtypeMap.get(maybeAlias)
+    return subtypeSet && subtypeSet.has(maybeSubtype)
   }
   getSubtypes (type) {
     return this.subtypeMap.get(type)
+  }
+  childrenOf (type) {
+    const data = this.metadata.get(type)
+    return iterable(data && data.children)
   }
   typeOf (valueOrNode) {
     const value = unwrapNode(valueOrNode)
@@ -62,7 +72,7 @@ export class Spec {
     const valueType = value.type
 
     if (typeof valueType !== 'string' || !subtypeMap.has(valueType)) {
-      return 'object'
+      return 'null'
     }
 
     return valueType

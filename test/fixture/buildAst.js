@@ -1,9 +1,13 @@
+import {describe, it, before} from 'mocha'
 import {expect} from 'chai'
-import lewis from '../../src/index'
 
-describe('node factory', () => {
-  let t
-  before (() => {
+import lewis from '../../src/index'
+import {Node} from '../../src/node'
+
+describe('Building ast data', () => {
+  let t, loadAst
+
+  before(() => {
     const {define, buildSpec} = lewis()
 
     define('Block', [
@@ -48,12 +52,11 @@ describe('node factory', () => {
       alias: 'Node'
     })
 
-    const {types} = buildSpec()
-    t = types
+    ;({types: t, loadAst} = buildSpec())
   })
 
-  it('should build proper JSON-able ast', () => {
-    const ast = t.Block([
+  it('should build proper JSON-able ast data', () => {
+    const data = t.Block([
       t.Number(42),
       t.Identifier('foo'),
       t.Block([
@@ -63,7 +66,10 @@ describe('node factory', () => {
       ])
     ])
 
-    expect(ast).to.deep.equal({
+    expect(t.Identifier('abc'))
+      .to.deep.equal({type: 'Identifier', name: 'abc'})
+
+    expect(data).to.deep.equal({
       type: 'Block',
       body: [
         {
@@ -94,5 +100,24 @@ describe('node factory', () => {
         }
       ]
     })
+  })
+
+  it('should load syntax tree based on data and spec', () => {
+    const data = t.Block([
+      t.Number(42),
+      t.Identifier('foo'),
+      t.Block([
+        t.Call(t.Identifier('bar'), [
+          t.Number(99)
+        ])
+      ])
+    ])
+
+    const result = loadAst(data)
+
+    expect(result).to.instanceof(Node)
+    expect(result.get('body')).to.be.an('array')
+    expect(result.get('body', 0)).to.instanceof(Node)
+    expect(result.get('body', 0).get('content').unwrap()).to.equal(42)
   })
 })

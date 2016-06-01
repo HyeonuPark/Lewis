@@ -1,16 +1,16 @@
-import {Grammar} from './grammar'
-import {Spec} from './spec'
+import {SpecBuilder} from './spec-helper'
 import {createNode} from './node-helper'
 
 export default function start () {
-  const grammar = new Grammar()
+  const {define, getSpec} = SpecBuilder()
 
   return {
-    define: grammar.define.bind(grammar),
+    define,
     buildSpec () {
-      const spec = new Spec(grammar)
+      const spec = getSpec()
 
       return {
+        spec,
         types: spec.factory,
         loadAst (ast) {
           return createNode(spec, ast)
