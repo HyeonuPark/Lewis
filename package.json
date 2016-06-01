@@ -8,7 +8,7 @@
     "unit": "mocha test/unit --require babel-polyfill --require babel-register",
     "fixture": "mocha test/fixture --require babel-polyfill --require babel-register",
     "lint": "eslint -c ./eslint.config.json --fix src test",
-    "test": "npm run unit && npm run fixture",
+    "test": "npm run lint && npm run unit && npm run fixture",
     "preversion": "npm test",
     "version": "git checkout master && git merge dev",
     "postversion": "npm run build && npm publish && git push origin master --tags && git checkout dev"
