@@ -1,2 +1,2 @@
 
-export function Tranform (node, visitor) {}
+export function Transform (node, visitor) {}

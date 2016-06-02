@@ -60,7 +60,7 @@ export function unwrapNode (maybeNode) {
     return maybeNode.map(unwrapNode)
   }
 
-  if (typeof maybeNode.unwrap === 'function') {
+  if (maybeNode && typeof maybeNode.unwrap === 'function') {
     return maybeNode.unwrap()
   }
 

@@ -24,19 +24,6 @@ describe('Converting ast to another form', () => {
   })
 
   it('should properly convert ast to another spec', () => {
-    const data = t.Sexpr([
-      'a',
-      'b',
-      t.Sexpr([
-        t.Sexpr([
-          'c',
-          'd'
-        ]),
-        'e',
-        t.Sexpr([])
-      ])
-    ])
-
     // another spec for c-like function call
     const {define, buildSpec} = lewis()
 
@@ -54,12 +41,25 @@ describe('Converting ast to another form', () => {
 
     const {types} = buildSpec()
 
+    const data = t.Sexpr([
+      'a',
+      'b',
+      t.Sexpr([
+        t.Sexpr([
+          'c',
+          'd'
+        ]),
+        'e',
+        t.Sexpr([])
+      ])
+    ])
+
     const result = loadAst(data).convert({
       Sexpr (node) {
         const body = node.get('body')
 
         if (body.length === 0) {
-          return null
+          return 'null'
         }
 
         return types.Call(body[0], body.slice(1))
@@ -70,7 +70,7 @@ describe('Converting ast to another form', () => {
       'b',
       types.Call(
         types.Call('c', ['d']),
-        ['e']
+        ['e', 'null']
       )
     ]))
   })
