@@ -3,7 +3,7 @@ import {expect} from 'chai'
 
 import lewis from '../../src/index'
 
-describe('Transforming ast via basic scope check', () => {
+describe('Building ast via basic scope check', () => {
   let t, loadAst
 
   before(() => {
