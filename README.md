@@ -65,7 +65,7 @@ define('FunctionCall', [
 export const {types, loadAst} = buildSpec()
 ```
 
-1. Build your AST
+1. Build your AST data
 
 ```js
 // ast.js
@@ -77,7 +77,7 @@ import {types as t} from './spec'
 // printf("my name is {}", name)
 //
 
-export const ast = t.Program([
+export const data = t.Program([
   t.FunctionCall(t.Identifier('println'), [
     t.StringLiteral('hello, world!')
   ]),
@@ -87,16 +87,16 @@ export const ast = t.Program([
   ])
 ])
 
-// ast from the Lewis are plain JSON-able object
-console.log(JSON.stringify(ast, null, 2))
+// ast data made with Lewis is a plain JSON-able object
+console.log(JSON.stringify(data, null, 2))
 ```
 
-1. Load path object from ast, and transform it
+1. Load node object from AST data, and transform it
 
 ```js
 // transform.js
 
-import {ast} from './ast'
+import {data} from './ast'
 import {types as t, loadAst} from './spec'
 
 function isCapitalized (str) {
@@ -104,41 +104,37 @@ function isCapitalized (str) {
   return first.toUpperCase() === first
 }
 
-const rootPath = loadAst(ast)
+const rootNode = loadAst(data)
 
-const capitalized = rootPath.transform({
-  StringLiteral (path) {
-    const content = path.get('content').node
+const capitalized = rootNode.transform({
+  StringLiteral (node) {
+    const content = node.get('content').unwrap()
 
-    if (isCapitalized(content)) {
-      return
+    if (!isCapitalized(content)) {
+      return t.StringLiteral(content[0].toUpperCase() + content.slice(1))
     }
-
-    return t.StringLiteral(content[0].toUpperCase() + content.slice(1))
   },
-  Identifier (path) {
-    const name = path.get('name').node
+  Identifier (node) {
+    const name = node.get('name').unwrap()
 
-    if (isCapitalized(name)) {
-      return
+    if (!isCapitalized(name)) {
+      return t.Identifier(name[0].toUpperCase() + name.slice(1))
     }
-
-    return t.Identifier(name[0].toUpperCase() + name.slice(1))
   }
 })
 
 const code = capitalized.convert({
-  Program (path) {
-    return path.get('body').join('\n')
+  Program (node) {
+    return node.get('body').join('\n')
   },
-  StringLiteral (path) {
-    return `"${path.get('content')}"`
+  StringLiteral (node) {
+    return `"${node.get('content')}"`
   },
-  Identifier (path) {
-    return path.get('name')
+  Identifier (node) {
+    return node.get('name')
   },
-  FunctionCall (path) {
-    return `${path.get('callee')}(${path.get('arguments').join(', ')})`
+  FunctionCall (node) {
+    return `${node.get('callee')}(${path.get('arguments').join(', ')})`
   }
 })
 
@@ -148,3 +144,12 @@ console.log(code)
 // Println("Hello, world!")
 // Printf("My name is {}", Name)
 ```
+
+# Milestone
+
+- [x] Factory
+- [x] Node
+- [x] Convert
+- [x] Transform
+- [ ] Scope
+- [ ] State
