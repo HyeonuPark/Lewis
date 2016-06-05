@@ -1,7 +1,8 @@
 import {SpecBuilder} from './spec-helper'
-import {createNode} from './node-helper'
+import {Node} from './node'
+import {initializeNode} from './node-helper'
 
-export default function start () {
+module.exports = function start () {
   const {define, getSpec} = SpecBuilder()
 
   return {
@@ -13,7 +14,7 @@ export default function start () {
         spec,
         types: spec.factory,
         loadAst (ast) {
-          return createNode(spec, ast)
+          return initializeNode(new Node(spec, ast))
         }
       }
     }

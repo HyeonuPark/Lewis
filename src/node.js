@@ -1,7 +1,7 @@
 import {Transform} from './transform'
 import {Convert} from './convert'
 import {Visitor} from './visitor'
-import {unwrapNode, primitiveTypes, assertType} from './util'
+import {unwrapNode, primitiveTypes, assertType, freezeBut} from './util'
 
 class BaseNode {
   constructor (spec, data, parent) {
@@ -29,12 +29,12 @@ class BaseNode {
 class LeafNode extends BaseNode {
   constructor (spec, data, parent) {
     super(spec, data, parent)
-    this._value = data
-    Object.seal(this)
+    this.value = data
+    freezeBut(this, '_scope')
   }
   get () {}
   unwrap () {
-    return this._value
+    return this.value
   }
 }
 
@@ -47,9 +47,10 @@ export class Node extends BaseNode {
       return new LeafNode(spec, data, parent)
     }
 
+    this.handlers = {enter: [], exit: [], last: []}
     const nodeType = this.type
-    const children = this.children = new Map()
-    Object.seal(this)
+    const children = this._children = new Map()
+    freezeBut(this, ['_scope', '_children'])
 
     for (let {name, type, isArray} of spec.childrenOf(nodeType)) {
       const childData = data[name]
@@ -70,8 +71,8 @@ export class Node extends BaseNode {
     }
   }
   get (childName, index) {
-    const {children} = this
-    const child = children.get(childName)
+    const {_children} = this
+    const child = _children.get(childName)
 
     if (Array.isArray(child) && typeof index === 'number') {
       return child[index]
@@ -80,11 +81,13 @@ export class Node extends BaseNode {
     return child
   }
   unwrap () {
-    const {type, children} = this
+    const {type, _children} = this
     const data = {type}
 
-    for (let [name, childNode] of children) {
-      data[name] = childNode.unwrap()
+    for (let [name, child] of _children) {
+      data[name] = Array.isArray(child)
+        ? child.map(el => el.unwrap())
+        : child.unwrap()
     }
 
     return data

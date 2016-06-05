@@ -1,6 +1,6 @@
 import {Set as ISet} from 'immutable'
 import detectType from 'type-detect'
-import {resolve as iterable} from 'iterlib'
+import {resolve as iterable, every} from 'iterlib'
 
 export function noop () {}
 export function getSelf () { return this }
@@ -12,6 +12,20 @@ export function panic (msg, meta) {
     Object.assign(err, meta)
   }
   throw err
+}
+
+export function freezeBut (obj, excludes) {
+  Object.seal(obj)
+
+  for (let key of Object.keys(obj)) {
+    if (excludes::every(el => el !== key)) {
+      Object.defineProperty(obj, key, {value: obj[key]})
+    } else {
+      Object.defineProperty(obj, key, {value: obj[key], writable: true})
+    }
+  }
+
+  return obj
 }
 
 export const primitiveTypes = ISet([
@@ -61,7 +75,12 @@ export function unwrapNode (maybeNode) {
   }
 
   if (maybeNode && typeof maybeNode.unwrap === 'function') {
-    return maybeNode.unwrap()
+    try {
+      return maybeNode.unwrap()
+    } catch (err) {
+      console.log(maybeNode)
+      throw err
+    }
   }
 
   const typeofNode = typeof maybeNode
@@ -75,9 +94,9 @@ export function unwrapNode (maybeNode) {
   }
 
   if (
-    maybeNode ||
-    typeofNode === 'object' ||
-    maybeNode.type ||
+    maybeNode &&
+    typeofNode === 'object' &&
+    maybeNode.type &&
     typeof maybeNode.type === 'string'
   ) {
     return maybeNode

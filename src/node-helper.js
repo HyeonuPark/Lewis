@@ -1,9 +1,9 @@
-import {resolve as iterable} from 'iterlib'
+import {resolve as iterable, concat} from 'iterlib'
 
 import {Node} from './node'
-import {primitiveTypes, panic} from './util'
+import {primitiveTypes} from './util'
 
-function initializeNode (node) {
+export function initializeNode (node) {
   const {spec, type} = node
 
   if (primitiveTypes.has(type)) {
@@ -17,22 +17,44 @@ function initializeNode (node) {
   }
 
   if (scope === 'basic') {
-    const err = init(node)
-
-    if (err) {
-      panic(err)
-    }
+    init(node)
 
     for (let {name} of spec.childrenOf(type)) {
       for (let child of iterable(node.get(name))) {
         initializeNode(child)
       }
     }
-
-    return node
   }
+
+  return node
 }
 
-export function createNode (spec, astData) {
-  return initializeNode(new Node(spec, astData))
+export function spawnNode (origin, astData) {
+  const {spec, parent} = origin
+  const node = new Node(spec, astData, parent)
+  initializeNode(node)
+  return node
+}
+
+export function getHandlerList (node, visitor, phase) {
+  const {type} = node
+  const handlers = node.handlers[phase]
+
+  if (phase === 'enter') {
+    return handlers::concat(visitor.get(type))
+  }
+
+  return handlers
+}
+
+export function leaveNode (node, stateMap) {
+  const {type} = node
+
+  if (primitiveTypes.has(type)) {
+    return
+  }
+
+  for (let {handler, key} of node.handlers.last) {
+    handler(stateMap.get(key))
+  }
 }
