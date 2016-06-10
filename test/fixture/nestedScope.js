@@ -4,7 +4,7 @@ import {expect} from 'chai'
 import lewis from '../../src/index'
 
 describe('Building ast via nested scope check', () => {
-  let t, loadAst
+  let t, loadAst, visitor
 
   before(() => {
     const {define, buildSpec} = lewis()
@@ -17,7 +17,7 @@ describe('Building ast via nested scope check', () => {
       }
     ], {
       alias: 'Node',
-      scope: 'child'
+      role: 'child'
     })
 
     define('Function', [
@@ -28,18 +28,7 @@ describe('Building ast via nested scope check', () => {
       }
     ], {
       alias: 'Node',
-      scope: 'lazy'
-    })
-
-    define('Comment', [
-      {
-        name: 'body',
-        type: ['Node', 'string'],
-        isArray: true
-      }
-    ], {
-      alias: 'Node',
-      scope: 'skip'
+      role: 'lazy'
     })
 
     define('Declaration', [
@@ -48,17 +37,7 @@ describe('Building ast via nested scope check', () => {
         type: 'string'
       }
     ], {
-      alias: 'Node',
-      init (node) {
-        const scope = node.scope('id')
-        const id = node.get('id').unwrap()
-
-        if (scope.hasOwn(id)) {
-          throw new Error(`Duplicated declaration of ${id}`)
-        }
-
-        scope.set(id)
-      }
+      alias: 'Node'
     })
 
     define('Identifier', [
@@ -67,21 +46,38 @@ describe('Building ast via nested scope check', () => {
         type: 'string'
       }
     ], {
-      alias: 'Node',
-      init (node) {
-        const scope = node.scope('id')
-        const id = node.get('id').unwrap()
-
-        if (!scope.has(id)) {
-          throw new Error(`Identifier ${id} not defined`)
-        }
-      }
+      alias: 'Node'
     })
 
     const spec = buildSpec()
 
     t = spec.types
     loadAst = spec.loadAst
+
+    visitor = {
+      Declaration: {
+        enter (node) {
+          const scope = node.scope('id')
+          const id = node.get('id').unwrap()
+
+          if (scope.hasOwn(id)) {
+            throw new Error(`Duplicated declaration of ${id}`)
+          }
+
+          scope.set(id, node.parent.unwrap())
+        }
+      },
+      Identifier: {
+        enter (node) {
+          const scope = node.scope('id')
+          const id = node.get('id').unwrap()
+
+          if (!scope.has(id)) {
+            throw new Error(`Identifier ${id} not defined`)
+          }
+        }
+      }
+    }
   })
 
   it('should success to build with proper scope', () => {
@@ -92,16 +88,12 @@ describe('Building ast via nested scope check', () => {
       ]),
       t.Function([
         t.Declaration('a'),
-        t.Identifier('b'),
-        t.Comment([
-          'foo',
-          t.Identifier('z')
-        ])
+        t.Identifier('b')
       ]),
       t.Declaration('b')
     ])
 
-    loadAst(data)
+    loadAst(data).transform(visitor)
   })
 
   it('should not allow to access from parent to child scope', () => {
@@ -119,8 +111,10 @@ describe('Building ast via nested scope check', () => {
       t.Identifier('a')
     ])
 
-    expect(() => loadAst(data1)).to.throw('Identifier a not defined')
-    expect(() => loadAst(data2)).to.throw('Identifier a not defined')
+    expect(() => loadAst(data1).transform(visitor))
+      .to.throw('Identifier a not defined')
+    expect(() => loadAst(data2).transform(visitor))
+      .to.throw('Identifier a not defined')
   })
 
   it('should not allow to access from child to not-yet-defined id', () => {
@@ -131,6 +125,7 @@ describe('Building ast via nested scope check', () => {
       t.Declaration('a')
     ])
 
-    expect(() => loadAst(data)).to.throw('Identifier a not defined')
+    expect(() => loadAst(data).transform(visitor))
+      .to.throw('Identifier a not defined')
   })
 })

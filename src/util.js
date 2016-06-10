@@ -28,9 +28,9 @@ export function freezeBut (obj, excludes) {
   return obj
 }
 
-export const primitiveTypes = ISet([
+export const reservedTypes = ISet([
   'null', 'number', 'boolean',
-  'string', 'root'
+  'string', 'root', 'Node'
 ])
 
 export function isTypeOf (value, type) {

@@ -8,14 +8,14 @@ export function Convert (node, visitor) {
     return node.unwrap()
   }
 
-  const handlerList = visitor.get(type)
+  const handlerList = visitor.enter(type)
   if (!handlerList || handlerList.length === 0) {
     panic(`Converter for type ${type} not specified`)
   } else if (handlerList.length > 1) {
     panic(`Duplicated converter for type ${type}`)
   }
 
-  const {handler} = handlerList[0]
+  const handler = handlerList[0]
 
   const fakeChildren = new Map()
 

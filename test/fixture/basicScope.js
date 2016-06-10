@@ -4,7 +4,7 @@ import {expect} from 'chai'
 import lewis from '../../src/index'
 
 describe('Building ast via basic scope check', () => {
-  let t, loadAst
+  let t, loadAst, visitor
 
   before(() => {
     const {define, buildSpec} = lewis()
@@ -15,7 +15,9 @@ describe('Building ast via basic scope check', () => {
         type: 'Node',
         isArray: true
       }
-    ])
+    ], {
+      role: 'child'
+    })
 
     define('Declaration', [
       {
@@ -23,17 +25,7 @@ describe('Building ast via basic scope check', () => {
         type: 'string'
       }
     ], {
-      alias: 'Node',
-      init (node) {
-        const scope = node.scope('id')
-        const id = node.get('id').unwrap()
-
-        if (scope.hasOwn(id)) {
-          throw new Error(`Duplicated declaration of ${id}`)
-        }
-
-        scope.set(id)
-      }
+      alias: 'Node'
     })
 
     define('Identifier', [
@@ -42,46 +34,74 @@ describe('Building ast via basic scope check', () => {
         type: 'string'
       }
     ], {
-      alias: 'Node',
-      init (node) {
-        const scope = node.scope('id')
-        const id = node.get('id').unwrap()
-
-        if (!scope.has(id)) {
-          throw new Error(`Identifier ${id} is not defined`)
-        }
-      }
+      alias: 'Node'
     })
 
     const spec = buildSpec()
 
     t = spec.types
     loadAst = spec.loadAst
+
+    visitor = {
+      Declaration: {
+        enter (node) {
+          const scope = node.scope('id')
+          const id = node.get('id').unwrap()
+
+          if (scope.hasOwn(id)) {
+            throw new Error(`Duplicated declaration of ${id}`)
+          }
+
+          scope.set(id)
+        }
+      },
+      Identifier: {
+        enter (node) {
+          const scope = node.scope('id')
+          const id = node.get('id').unwrap()
+
+          if (!scope.has(id)) {
+            throw new Error(`Identifier ${id} is not defined`)
+          }
+        }
+      }
+    }
   })
 
-  it('should success to build with proper scope', () => {
-    const data = t.Block([
+  it('should detect duplicated declaration', () => {
+    const valid = t.Block([
       t.Declaration('a'),
       t.Declaration('b'),
       t.Identifier('a')
     ])
 
-    loadAst(data)
-  })
-
-  it('should fail to build with non-proper scope', () => {
-    const data1 = t.Block([
+    const invalid = t.Block([
       t.Declaration('a'),
       t.Declaration('b'),
       t.Declaration('a')
     ])
 
-    const data2 = t.Block([
+    loadAst(valid).transform(visitor)
+
+    expect(() => loadAst(invalid).transform(visitor))
+      .to.throw('Duplicated declaration of a')
+  })
+
+  it('should detect undeclared identifier', () => {
+    const valid = t.Block([
+      t.Declaration('a'),
+      t.Declaration('b'),
+      t.Identifier('a')
+    ])
+
+    const invalid = t.Block([
       t.Declaration('a'),
       t.Identifier('b')
     ])
 
-    expect(() => loadAst(data1)).to.throw('Duplicated declaration of a')
-    expect(() => loadAst(data2)).to.throw('Identifier b is not defined')
+    loadAst(valid).transform(visitor)
+
+    expect(() => loadAst(invalid).transform(visitor))
+      .to.throw('Identifier b is not defined')
   })
 })

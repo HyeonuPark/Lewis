@@ -1,17 +1,15 @@
 import {map} from 'iterlib'
 
-import {leaveNode, spawnNode, getHandlerList} from './node-helper'
-import {State} from './state'
-import {FMap} from './fmap'
-import {primitiveTypes, panic} from './util'
+import {spawnNode} from './node-helper'
+import {reservedTypes, panic} from './util'
 
 const NOT_MODIFIED = 'NOT_MODIFIED'
 const DELETED = 'DELETED'
 const REPLACED = 'REPLACED'
 const REPLACED_MULTIPLE = 'REPLACED_MULTIPLE'
 
-function applyHandler (node, {handler, key}, state) {
-  const result = handler(node, state.get(key))
+function applyHandler (node, handler) {
+  const result = handler(node)
 
   if (result === void 0 || result === node) {
     return {flag: NOT_MODIFIED, result: node}
@@ -31,9 +29,9 @@ function applyHandler (node, {handler, key}, state) {
   return {flag: REPLACED, result: spawnNode(node, result)}
 }
 
-function applyHandlerList (node, handlerList, state) {
+function applyHandlerList (node, handlerList) {
   for (let handler of handlerList) {
-    const {flag, result} = applyHandler(node, handler, state)
+    const {flag, result} = applyHandler(node, handler)
 
     if (flag === DELETED) {
       return {flag, result: null}
@@ -47,21 +45,20 @@ function applyHandlerList (node, handlerList, state) {
   return {flag: NOT_MODIFIED, result: node}
 }
 
-function transformNode (node, visitor, state, debugInfo) {
+function transformNode (node, visitor, debugInfo) {
   const {type, spec} = node
 
   // for LeafNode
-  if (primitiveTypes.has(type)) {
+  if (reservedTypes.has(type)) {
     return {flag: NOT_MODIFIED, result: node}
   }
 
   // enter phase
   {
-    const handlerList = getHandlerList(node, visitor, 'enter')
-    const {flag, result} = applyHandlerList(node, handlerList, state)
+    const handlerList = visitor.enter(type)
+    const {flag, result} = applyHandlerList(node, handlerList)
 
     if (flag !== NOT_MODIFIED) {
-      leaveNode(node)
       return {flag, result}
     }
   }
@@ -78,7 +75,7 @@ function transformNode (node, visitor, state, debugInfo) {
     const childPos = `${type} -> ${isArray ? 'Each ' : ''}${name}`
 
     if (isArray && Array.isArray(child)) {
-      const {flag, result} = transformMultiple(child, visitor, state, childPos)
+      const {flag, result} = transformMultiple(child, visitor, childPos)
 
       if (flag !== NOT_MODIFIED) {
         for (let eachResult of result) {
@@ -86,7 +83,7 @@ function transformNode (node, visitor, state, debugInfo) {
         }
       }
     } else if (!isArray && !Array.isArray(child)) {
-      const {flag, result} = transformSingle(child, visitor, state, childPos)
+      const {flag, result} = transformSingle(child, visitor, childPos)
 
       if (flag !== NOT_MODIFIED) {
         spec.assertType(result, childType, childPos)
@@ -100,10 +97,8 @@ function transformNode (node, visitor, state, debugInfo) {
 
   // exit phase
   {
-    const handlerList = getHandlerList(node, visitor, 'enter')
-    const {flag, result} = applyHandlerList(node, handlerList, state)
-
-    leaveNode(node)
+    const handlerList = visitor.exit(type)
+    const {flag, result} = applyHandlerList(node, handlerList)
 
     if (flag !== NOT_MODIFIED) {
       return {flag, result}
@@ -113,15 +108,15 @@ function transformNode (node, visitor, state, debugInfo) {
   }
 }
 
-function transformSingle (node, visitor, state, debugInfo) {
-  let {flag, result} = transformNode(node, visitor, state, debugInfo)
+function transformSingle (node, visitor, debugInfo) {
+  let {flag, result} = transformNode(node, visitor, debugInfo)
 
   if (flag === NOT_MODIFIED) {
     return {flag, result}
   }
 
   while (flag === REPLACED) {
-    ;({flag, result} = transformNode(result, visitor, state, debugInfo))
+    ;({flag, result} = transformNode(result, visitor, debugInfo))
   }
 
   if (flag === REPLACED_MULTIPLE) {
@@ -135,13 +130,13 @@ function transformSingle (node, visitor, state, debugInfo) {
   return {flag: REPLACED, result}
 }
 
-function transformMultiple (nodeList, visitor, state, debugInfo) {
+function transformMultiple (nodeList, visitor, debugInfo) {
   let curIndex = 0
   let modified = false
 
   while (curIndex < nodeList.length) {
     const node = nodeList[curIndex]
-    const {flag, result} = transformNode(node, visitor, state, debugInfo)
+    const {flag, result} = transformNode(node, visitor, debugInfo)
 
     if (flag !== NOT_MODIFIED && !modified) {
       modified = true
@@ -166,8 +161,7 @@ function transformMultiple (nodeList, visitor, state, debugInfo) {
 }
 
 export function Transform (node, visitor) {
-  const state = new FMap(() => new State())
-  const {flag, result} = transformNode(node, visitor, state, 'Root node')
+  const {flag, result} = transformNode(node, visitor, 'Root node')
 
   if (flag === DELETED) {
     return spawnNode(node, null)

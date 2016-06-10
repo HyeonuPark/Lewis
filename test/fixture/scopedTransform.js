@@ -17,7 +17,7 @@ describe('Transforming ast via scope check', () => {
       }
     ], {
       alias: 'Node',
-      scope: 'child'
+      role: 'child'
     })
 
     define('Header', [
@@ -84,8 +84,8 @@ describe('Transforming ast via scope check', () => {
       Line (node) {
         const content = node.get('content').unwrap()
         const scope = node.scope('meta')
-        const head = scope.get('head') || ''
-        const foot = scope.get('foot') || ''
+        const head = scope.get('head') || '_'
+        const foot = scope.get('foot') || '_'
 
         if (
           content.slice(0, head.length) === head &&
@@ -123,7 +123,7 @@ describe('Transforming ast via scope check', () => {
         Line (node) {
           const content = node.get('content').unwrap()
           const scope = node.scope('meta')
-          const head = scope.get('head') || ''
+          const head = scope.get('head') || '_'
 
           if (content.slice(0, head.length) === head) {
             return
@@ -144,13 +144,13 @@ describe('Transforming ast via scope check', () => {
         Line (node) {
           const content = node.get('content').unwrap()
           const scope = node.scope('meta')
-          const foot = scope.get('foot') || ''
+          const foot = scope.get('foot') || '_'
 
           if (content.slice(-foot.length) === foot) {
             return
           }
 
-          return t.Line(`${foot}${content}`)
+          return t.Line(`${content}${foot}`)
         },
         Footer (node) {
           const content = node.get('content').unwrap()

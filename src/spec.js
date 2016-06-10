@@ -3,9 +3,9 @@ import {map, toArray, resolve as iterable} from 'iterlib'
 
 import {buildFactory} from './factory'
 import {FMap} from './fmap'
-import {primitiveTypes, unwrapNode, panic} from './util'
+import {reservedTypes, unwrapNode, panic} from './util'
 
-const primitiveMap = primitiveTypes::map(el => [el, [el]])::toArray()
+const primitiveMap = reservedTypes::map(el => [el, [el]])::toArray()
 
 export class Spec {
   constructor (rules) {
@@ -13,7 +13,7 @@ export class Spec {
     const factory = this.factory = Object.create(null)
 
     this.metadata = IMap().withMutations(_metadata => {
-      for (let [type, {children, alias, scope, init}] of rules) {
+      for (let [type, {children, alias, role}] of rules) {
         _subtypeMap.get(type).push(type)
 
         let ancestor = alias
@@ -24,7 +24,7 @@ export class Spec {
           ancestor = nextAncestor && nextAncestor.alias
         }
 
-        _metadata.set(type, Object.freeze({children, scope, init}))
+        _metadata.set(type, Object.freeze({children, role}))
 
         if (children) {
           factory[type] = buildFactory(this, type, children)

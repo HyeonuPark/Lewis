@@ -1,13 +1,13 @@
-import {toArray} from 'iterlib'
+import {map, toArray} from 'iterlib'
 
 import {Spec} from './spec'
-import {noop, panic, assertType, assertOneOf} from './util'
+import {reservedTypes, panic, assertType, assertOneOf} from './util'
 
 export function SpecBuilder () {
-  const rules = new Map()
+  const rules = new Map(reservedTypes::map(t => [t, {role: 'basic'}]))
 
   return {
-    define (nodeType, _children, {alias, scope = 'basic', init = noop} = {}) {
+    define (nodeType, _children, {alias = 'Node', role = 'basic'} = {}) {
       if (rules.has(nodeType)) {
         panic(`Duplicated node definition of ${nodeType}`)
       }
@@ -15,8 +15,7 @@ export function SpecBuilder () {
       assertType(nodeType, 'string', 'Node type')
       assertType(_children, ['array', 'null'], 'Children')
       assertType(alias, ['string', 'null'], 'Type alias')
-      assertOneOf(scope, ['basic', 'child', 'lazy', 'skip'], 'Scope type')
-      assertType(init, 'function', 'Node initializer')
+      assertOneOf(role, ['basic', 'child', 'lazy'], 'Role')
 
       const children = (_children || [])
         .map(({name, type, isArray = false, hidden = false}) => {
@@ -28,7 +27,7 @@ export function SpecBuilder () {
           return {name, type: type::toArray(), isArray, hidden}
         })
 
-      rules.set(nodeType, {children, alias, scope, init})
+      rules.set(nodeType, {children, alias, role})
     },
     getSpec () {
       return new Spec(rules)

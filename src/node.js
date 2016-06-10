@@ -1,14 +1,20 @@
+import {Scope} from './scope'
 import {Transform} from './transform'
 import {Convert} from './convert'
 import {Visitor} from './visitor'
-import {unwrapNode, primitiveTypes, assertType, freezeBut} from './util'
+import {unwrapNode, reservedTypes, assertType, freezeBut} from './util'
 
 class BaseNode {
-  constructor (spec, data, parent) {
-    this.type = spec.typeOf(data)
+  constructor (spec, data, parent, prevNode) {
     this.spec = spec
     this.parent = parent
-    this._scope = null
+
+    const type = this.type = spec.typeOf(data)
+    const {role} = spec.metadata.get(type)
+    const parentScope = parent && parent._scope
+    const prevScope = prevNode && prevNode._scope
+
+    this._scope = Scope(role, parentScope, prevScope)
   }
   is (alias) {
     const {spec, type} = this
@@ -16,7 +22,7 @@ class BaseNode {
   }
   scope (scopeType) {
     const {_scope} = this
-    return _scope && _scope.get(scopeType)
+    return _scope.get(scopeType)
   }
   transform (rawVisitor) {
     return Transform(this, Visitor(this.spec, rawVisitor))
@@ -30,7 +36,7 @@ class LeafNode extends BaseNode {
   constructor (spec, data, parent) {
     super(spec, data, parent)
     this.value = data
-    freezeBut(this, '_scope')
+    Object.freeze(this)
   }
   get () {}
   unwrap () {
@@ -43,7 +49,7 @@ export class Node extends BaseNode {
     const data = unwrapNode(_data)
     super(spec, data, parent)
 
-    if (!Array.isArray(data) && primitiveTypes.has(spec.typeOf(data))) {
+    if (!Array.isArray(data) && reservedTypes.has(this.type)) {
       return new LeafNode(spec, data, parent)
     }
 

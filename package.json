@@ -43,7 +43,7 @@
   },
   "dependencies": {
     "immutable": "^3.8.1",
-    "iterlib": "^1.3.2",
+    "iterlib": "^1.4.0",
     "type-detect": "^2.0.0"
   }
 }
