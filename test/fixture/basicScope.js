@@ -81,9 +81,9 @@ describe('Building ast via basic scope check', () => {
       t.Declaration('a')
     ])
 
-    loadAst(valid).transform(visitor)
+    loadAst(valid).traverse(visitor)
 
-    expect(() => loadAst(invalid).transform(visitor))
+    expect(() => loadAst(invalid).traverse(visitor))
       .to.throw('Duplicated declaration of a')
   })
 
@@ -99,9 +99,9 @@ describe('Building ast via basic scope check', () => {
       t.Identifier('b')
     ])
 
-    loadAst(valid).transform(visitor)
+    loadAst(valid).traverse(visitor)
 
-    expect(() => loadAst(invalid).transform(visitor))
+    expect(() => loadAst(invalid).traverse(visitor))
       .to.throw('Identifier b is not defined')
   })
 })

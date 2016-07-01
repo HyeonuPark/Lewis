@@ -91,10 +91,10 @@ export const data = t.Program([
 console.log(JSON.stringify(data, null, 2))
 ```
 
-1. Load node object from AST data, and transform it
+1. Load node object from AST data, and traverse it
 
 ```js
-// transform.js
+// traverse.js
 
 import {data} from './ast'
 import {types as t, loadAst} from './spec'
@@ -106,7 +106,7 @@ function isCapitalized (str) {
 
 const rootNode = loadAst(data)
 
-const capitalized = rootNode.transform({
+const capitalized = rootNode.traverse({
   StringLiteral (node) {
     const content = node.get('content').unwrap()
 
@@ -134,7 +134,7 @@ const code = capitalized.convert({
     return node.get('name')
   },
   FunctionCall (node) {
-    return `${node.get('callee')}(${path.get('arguments').join(', ')})`
+    return `${node.get('callee')}(${node.get('arguments').join(', ')})`
   }
 })
 
@@ -150,5 +150,5 @@ console.log(code)
 - [x] Factory
 - [x] Node
 - [x] Convert
-- [x] Transform
-- [ ] Scope
+- [x] Traverse
+- [x] Scope

@@ -3,7 +3,7 @@ import {expect} from 'chai'
 
 import lewis from '../../src/index'
 
-describe('Transforming ast', () => {
+describe('Traversing ast', () => {
   let t, loadAst
 
   before(() => {
@@ -33,7 +33,7 @@ describe('Transforming ast', () => {
     loadAst = spec.loadAst
   })
 
-  it('should properly transform syntax tree', () => {
+  it('should properly traverse syntax tree', () => {
     const data = t.Block([
       t.Identifier('aaa'),
       t.Block([
@@ -48,7 +48,7 @@ describe('Transforming ast', () => {
       ])
     ])
 
-    const result = loadAst(data).transform({
+    const result = loadAst(data).traverse({
       Identifier (node) {
         const name = node.get('name').unwrap()
         const first = name[0]
@@ -57,15 +57,17 @@ describe('Transforming ast', () => {
           return t.Identifier(first.toUpperCase() + name.slice(1))
         }
       },
-      Block (node) {
-        const body = node.get('body')
-        const len = body.length
+      Block: {
+        exit (node) {
+          const body = node.get('body')
+          const len = body.length
 
-        if (len === 0) {
-          return null
-        }
-        if (len === 1) {
-          return body[0]
+          if (len === 0) {
+            return null
+          }
+          if (len === 1) {
+            return body[0]
+          }
         }
       }
     })

@@ -1,7 +1,4 @@
 {
   "parser": "babel-eslint",
-  "extends": "standard",
-  "rules": {
-    "no-trailing-spaces": 0
-  }
+  "extends": "standard"
 }

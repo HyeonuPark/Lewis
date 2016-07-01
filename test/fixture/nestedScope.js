@@ -4,7 +4,7 @@ import {expect} from 'chai'
 import lewis from '../../src/index'
 
 describe('Building ast via nested scope check', () => {
-  let t, loadAst, visitor
+  let t, loadAst, initializer, validator
 
   before(() => {
     const {define, buildSpec} = lewis()
@@ -54,7 +54,7 @@ describe('Building ast via nested scope check', () => {
     t = spec.types
     loadAst = spec.loadAst
 
-    visitor = {
+    initializer = {
       Declaration: {
         enter (node) {
           const scope = node.scope('id')
@@ -66,7 +66,10 @@ describe('Building ast via nested scope check', () => {
 
           scope.set(id, node.parent.unwrap())
         }
-      },
+      }
+    }
+
+    validator = {
       Identifier: {
         enter (node) {
           const scope = node.scope('id')
@@ -93,7 +96,7 @@ describe('Building ast via nested scope check', () => {
       t.Declaration('b')
     ])
 
-    loadAst(data).transform(visitor)
+    loadAst(data).traverse(initializer).traverse(validator)
   })
 
   it('should not allow to access from parent to child scope', () => {
@@ -111,9 +114,9 @@ describe('Building ast via nested scope check', () => {
       t.Identifier('a')
     ])
 
-    expect(() => loadAst(data1).transform(visitor))
+    expect(() => loadAst(data1).traverse(initializer).traverse(validator))
       .to.throw('Identifier a not defined')
-    expect(() => loadAst(data2).transform(visitor))
+    expect(() => loadAst(data2).traverse(initializer).traverse(validator))
       .to.throw('Identifier a not defined')
   })
 
@@ -125,7 +128,7 @@ describe('Building ast via nested scope check', () => {
       t.Declaration('a')
     ])
 
-    expect(() => loadAst(data).transform(visitor))
+    expect(() => loadAst(data).traverse(initializer).traverse(validator))
       .to.throw('Identifier a not defined')
   })
 })

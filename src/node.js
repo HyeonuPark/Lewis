@@ -1,5 +1,5 @@
 import {Scope} from './scope'
-import {Transform} from './transform'
+import {Traverse} from './traverse'
 import {Convert} from './convert'
 import {Visitor} from './visitor'
 import {unwrapNode, reservedTypes, assertType, freezeBut} from './util'
@@ -24,8 +24,8 @@ class BaseNode {
     const {_scope} = this
     return _scope.get(scopeType)
   }
-  transform (rawVisitor) {
-    return Transform(this, Visitor(this.spec, rawVisitor))
+  traverse (rawVisitor) {
+    return Traverse(this, Visitor(this.spec, rawVisitor))
   }
   convert (rawVisitor) {
     return Convert(this, Visitor(this.spec, rawVisitor))

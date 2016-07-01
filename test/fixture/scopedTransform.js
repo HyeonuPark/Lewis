@@ -3,7 +3,7 @@ import {expect} from 'chai'
 
 import lewis from '../../src/index'
 
-describe('Transforming ast via scope check', () => {
+describe('Traversing ast via scope check', () => {
   let t, loadAst, data, proper
 
   before(() => {
@@ -79,8 +79,8 @@ describe('Transforming ast via scope check', () => {
     ])
   })
 
-  it('should transform appropriately to current scope', () => {
-    const result = loadAst(data).transform({
+  it('should traverse appropriately to current scope', () => {
+    const result = loadAst(data).traverse({
       Line (node) {
         const content = node.get('content').unwrap()
         const scope = node.scope('meta')
@@ -117,8 +117,8 @@ describe('Transforming ast via scope check', () => {
     expect(result.unwrap()).to.deep.equal(proper)
   })
 
-  it('should transform appropriately with separated visitors', () => {
-    const result = loadAst(data).transform([
+  it('should traverse appropriately with separated visitors', () => {
+    const result = loadAst(data).traverse([
       {
         Line (node) {
           const content = node.get('content').unwrap()

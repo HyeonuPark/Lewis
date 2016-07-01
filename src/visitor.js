@@ -16,7 +16,7 @@ export function Visitor (spec, rawVisitor) {
 
       if (typeof handler === 'function') {
         enterMap.get(target).push(handler)
-        exitMap.get(target).push(handler)
+        continue
       }
 
       const {enter, exit} = handler
@@ -26,7 +26,7 @@ export function Visitor (spec, rawVisitor) {
       }
 
       if (typeof exit === 'function') {
-        exitMap.get(target).push(enter)
+        exitMap.get(target).push(exit)
       }
     }
   }

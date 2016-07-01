@@ -11,7 +11,7 @@ const REPLACED_MULTIPLE = 'REPLACED_MULTIPLE'
 function applyHandler (node, handler) {
   const result = handler(node)
 
-  if (result === void 0 || result === node) {
+  if (result === void 0) {
     return {flag: NOT_MODIFIED, result: node}
   }
 
@@ -21,8 +21,8 @@ function applyHandler (node, handler) {
 
   if (Array.isArray(result)) {
     return {
-      result: result::map(el => spawnNode(node, el)),
-      flag: REPLACED_MULTIPLE
+      flag: REPLACED_MULTIPLE,
+      result: result::map(el => spawnNode(node, el))
     }
   }
 
@@ -45,7 +45,7 @@ function applyHandlerList (node, handlerList) {
   return {flag: NOT_MODIFIED, result: node}
 }
 
-function transformNode (node, visitor, debugInfo) {
+function traverseNode (node, visitor, debugInfo) {
   const {type, spec} = node
 
   // for LeafNode
@@ -63,7 +63,7 @@ function transformNode (node, visitor, debugInfo) {
     }
   }
 
-  // children transformation phase
+  // children traverse phase
 
   const {_children} = node
   for (let {name, type: childType, hidden, isArray} of spec.childrenOf(type)) {
@@ -75,7 +75,7 @@ function transformNode (node, visitor, debugInfo) {
     const childPos = `${type} -> ${isArray ? 'Each ' : ''}${name}`
 
     if (isArray && Array.isArray(child)) {
-      const {flag, result} = transformMultiple(child, visitor, childPos)
+      const {flag, result} = traverseMultiple(child, visitor, childPos)
 
       if (flag !== NOT_MODIFIED) {
         for (let eachResult of result) {
@@ -83,7 +83,7 @@ function transformNode (node, visitor, debugInfo) {
         }
       }
     } else if (!isArray && !Array.isArray(child)) {
-      const {flag, result} = transformSingle(child, visitor, childPos)
+      const {flag, result} = traverseSingle(child, visitor, childPos)
 
       if (flag !== NOT_MODIFIED) {
         spec.assertType(result, childType, childPos)
@@ -103,20 +103,20 @@ function transformNode (node, visitor, debugInfo) {
     if (flag !== NOT_MODIFIED) {
       return {flag, result}
     }
-
-    return {flag: NOT_MODIFIED, result: node}
   }
+
+  return {flag: NOT_MODIFIED, result: node}
 }
 
-function transformSingle (node, visitor, debugInfo) {
-  let {flag, result} = transformNode(node, visitor, debugInfo)
+function traverseSingle (node, visitor, debugInfo) {
+  let {flag, result} = traverseNode(node, visitor, debugInfo)
 
   if (flag === NOT_MODIFIED) {
     return {flag, result}
   }
 
   while (flag === REPLACED) {
-    ;({flag, result} = transformNode(result, visitor, debugInfo))
+    ;({flag, result} = traverseNode(result, visitor, debugInfo))
   }
 
   if (flag === REPLACED_MULTIPLE) {
@@ -130,13 +130,13 @@ function transformSingle (node, visitor, debugInfo) {
   return {flag: REPLACED, result}
 }
 
-function transformMultiple (nodeList, visitor, debugInfo) {
+function traverseMultiple (nodeList, visitor, debugInfo) {
   let curIndex = 0
   let modified = false
 
   while (curIndex < nodeList.length) {
     const node = nodeList[curIndex]
-    const {flag, result} = transformNode(node, visitor, debugInfo)
+    const {flag, result} = traverseNode(node, visitor, debugInfo)
 
     if (flag !== NOT_MODIFIED && !modified) {
       modified = true
@@ -160,8 +160,8 @@ function transformMultiple (nodeList, visitor, debugInfo) {
   }
 }
 
-export function Transform (node, visitor) {
-  const {flag, result} = transformNode(node, visitor, 'Root node')
+export function Traverse (node, visitor) {
+  const {flag, result} = traverseNode(node, visitor, 'Root node')
 
   if (flag === DELETED) {
     return spawnNode(node, null)
